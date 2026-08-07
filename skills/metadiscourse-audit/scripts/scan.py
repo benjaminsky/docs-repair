@@ -341,6 +341,11 @@ def main():
         os.path.join(here, "README.md"),
         os.path.join(here, "references") + os.sep,
     ]
+    # Packaged as <repo>/skills/<name>/, the repo's own README documents this
+    # same skill and quotes the patterns on nearly every line.
+    if os.path.basename(os.path.dirname(here)) == "skills":
+        excludes.append(os.path.join(os.path.dirname(os.path.dirname(here)),
+                                     "README.md"))
     files, records = collect(args.paths, excludes, args.include_records)
     if not files:
         print("no standing markdown found"

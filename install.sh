@@ -45,7 +45,8 @@ done
 [ -n "$DEST" ] || DEST="$HOME/.claude/skills"
 TARGET="$DEST/$NAME"
 
-SRC="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+SRC="$REPO_ROOT/skills/$NAME"
 if [ ! -f "$SRC/SKILL.md" ]; then
     echo "error: run this from a clone of $REPO" >&2
     exit 1
@@ -83,8 +84,11 @@ if [ "$MODE" = "link" ]; then
     echo "linked $TARGET -> $SRC"
 else
     mkdir -p "$TARGET"
-    for item in SKILL.md README.md LICENSE references scripts; do
+    for item in SKILL.md references scripts; do
         [ -e "$SRC/$item" ] && cp -R "$SRC/$item" "$TARGET/"
+    done
+    for item in README.md LICENSE; do
+        [ -e "$REPO_ROOT/$item" ] && cp "$REPO_ROOT/$item" "$TARGET/"
     done
     : > "$TARGET/.installed-by-metadiscourse-audit"
     echo "installed $TARGET"

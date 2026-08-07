@@ -1,0 +1,29 @@
+{
+  "name": "benjaminsky-skills",
+  "description": "benjaminsky's Claude Code skills.",
+  "owner": {
+    "name": "benjaminsky",
+    "url": "https://github.com/benjaminsky"
+  },
+  "plugins": [
+    {
+      "name": "benjaminsky",
+      "source": "./",
+      "description": "Documentation hygiene. metadiscourse-audit finds and removes text whose subject is the document rather than the thing it documents \u2014 changelogs written into prose, dated status stamps, caveats buried mid-paragraph, staging tics.",
+      "version": "1.0.0",
+      "author": {
+        "name": "benjaminsky"
+      },
+      "homepage": "https://github.com/benjaminsky/metadiscourse-audit",
+      "license": "MIT",
+      "category": "documentation",
+      "keywords": [
+        "documentation",
+        "writing",
+        "prose",
+        "editing",
+        "cleanup"
+      ]
+    }
+  ]
+}

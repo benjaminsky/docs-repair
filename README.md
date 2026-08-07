@@ -1,20 +1,26 @@
-# metadiscourse-audit
+# Metadiscourse Audit
 
-Find and remove **metadiscourse** from prose documentation — text whose subject
-is the document, its author, or its reader rather than the thing the document is
-about.
+Metadiscourse Audit finds and removes the text in your documentation whose subject is the document, its author, or its reader, rather than the thing the document is actually about.
 
-Most of it arrives through revision, not drafting. A fact changes, and the new
-fact gets appended next to the old one instead of replacing it. Each append is
-individually defensible; the cost compounds invisibly, and the densest files in
-any repo are the ones that were revised most.
+## Quickstart
 
-Ships as an agent skill (a `SKILL.md` plus references) **and** as a standalone
-scanner you can run with no agent at all.
+Give your agent the audit: [Claude Code](#claude-code), [Cursor](#cursor), [Codex CLI](#codex-cli), [Gemini CLI](#gemini-cli), [any other agent](#any-other-agent), or [no agent at all](#no-agent-at-all).
+
+## How it works
+
+Most metadiscourse is not a drafting problem. It arrives through revision. A fact changes, and the new fact gets appended next to the old one instead of replacing it — so the document starts narrating how it reached its current state instead of just stating it. Every one of those appends was correct when it was written, which is why nobody catches them, and why the densest files in your repo are the ones you have edited most.
+
+The audit starts by reading your project's own rules — `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `.cursorrules`, a style guide, whatever you use. Projects encode conventions that *require* this kind of text, and stripping them is the main way an audit like this does damage. Whatever it finds there is protected for the rest of the run.
+
+Then it separates your records from your standing documents. A document is either the events or a projection of them, never both. A dated plan, spec, ADR or changelog is an event: written once, read as of its date, and its "previously / now" language is its content. Those are left alone. A README or a runbook is a projection of those events onto now, and that is what gets audited.
+
+Only then does it scan. You get a list of findings, each with a `file:line`, the text itself, a class, a verdict — cut, fold, move, or keep — and a concrete rewrite. Ask for the list first if you want to approve before anything changes, or let it apply the edits.
+
+Two rules shape the verdicts. Caveats are never cut, only moved: a risk or a hedge is content, and the failure is that it interrupts the sentence you came for instead of sitting in a footnote. And a superlative is information exactly once — when four documents each claim to hold the single most important thing, they cancel.
 
 ## What it finds
 
-**Iteration artifacts** — the document narrating its own history:
+A document arguing with its own history:
 
 ```diff
 - _Changed in `rules/2026-04-b`: state X was previously inferred from a passed
@@ -22,119 +28,163 @@ scanner you can run with no agent at all.
 ```
 
 ```diff
-- migrations live in `migrations/` and are the source of truth for the schema
-- (it is no longer auto-created on first request).
-+ migrations live in `migrations/` and are the source of truth for the schema.
+- An earlier draft of this doc said the timeout was 30s. It is 10s.
++ The timeout is 10s.
 ```
 
-**Caveats in the main line** — content worth keeping, in the wrong place. A
-qualification set inside the sentence it qualifies doubles the reader's work;
-the same qualification as a footnote costs nothing until someone wants it.
+```diff
+- The parser now handles doubled quotes.
++ The parser handles doubled quotes.
+```
 
-**Staging tics** — announcing how many bullets follow, "it's worth noting",
-headings that argue instead of naming, and the same superlative claimed in four
-different files.
+A deleted behaviour that mattered to whoever upgraded, and to nobody since:
 
-Every finding gets `file:line`, the verbatim text, a class, a verdict
-(cut / fold / move / keep) and a concrete rewrite.
+```diff
+- Migrations are the source of truth for the schema (it is no longer
+- auto-created on first request).
++ Migrations are the source of truth for the schema.
+```
 
-## Install
+A date stamped into a paragraph, promising an update that never comes:
+
+```diff
+- **Status 2026-04-02:** the batch job has not been made idempotent (issue #14).
++ Making the batch job idempotent is the obvious next change (issue #14).
+```
+
+The cross-reference stays. Only the claim about its state goes, because that is the part the tracker already knows and the paragraph does not.
+
+A caveat wedged into the sentence it qualifies:
+
+```diff
+- The window measures back from the end date, not the start date. The start
+- date would be tighter — goods ship at construction start, not eighteen months
+- later — but that column is sparsely populated, and an anchor that is usually
+- absent produces a mostly blank report. Revisit if a future month fills it in.
++ The window measures back from the end date, not the start date.[^anchor]
+```
+
+A section that announces how many bullets are about to follow:
+
+```diff
+- Two priors worth defending explicitly:
++ Two priors:
+```
+
+The count stays — sometimes it carries the argument, as in "two *independent* defences". The wrapper goes.
+
+A heading that argues instead of naming:
+
+```diff
+- ## The distinction that decides the whole design
++ ## The model maps columns; code reads cells
+```
+
+```diff
+- ## Format stability — measured, not assumed
++ ## Format stability
+```
+
+An attitude marker rating your attention instead of telling you something:
+
+```diff
+- Worth a glance while the file is open: are the milestone columns dates?
++ Check that the milestone columns hold dates, not status strings.
+```
+
+And the one that only shows up across a whole doc set: four different files each claiming to hold the single most important thing. They cancel. Three become ordinary claims and one keeps the crown.
+
+## Installation
+
+### Claude Code
+
+Add the marketplace, then install the plugin:
+
+```
+/plugin marketplace add benjaminsky/metadiscourse-audit
+/plugin install benjaminsky@benjaminsky-skills
+```
+
+That gives you `/benjaminsky:metadiscourse-audit`, and Claude will reach for it on its own when you describe the problem. Update later with `/plugin marketplace update benjaminsky-skills`.
+
+If you would rather keep it as a plain skill with no plugin machinery, clone it into your skills directory instead:
 
 ```bash
 git clone https://github.com/benjaminsky/metadiscourse-audit
 cd metadiscourse-audit && ./install.sh
 ```
 
-| | |
-| --- | --- |
-| `./install.sh` | current user — `~/.claude/skills/metadiscourse-audit` |
-| `./install.sh --project` | this repo — `./.claude/skills/metadiscourse-audit` |
-| `./install.sh --dir PATH` | anywhere — for agents that look elsewhere |
-| `./install.sh --link` | symlink, so `git pull` updates the install |
-| `./install.sh --uninstall` | remove it again |
+That installs to `~/.claude/skills/metadiscourse-audit`. Pass `--project` to install into the current repo instead, `--link` to symlink so `git pull` updates it in place, or `--uninstall` to remove it. It will not overwrite a directory it did not create.
 
-It refuses to overwrite a directory it did not create, so a fork or a
-hand-edited copy is safe.
+### Cursor
 
-There is nothing to build and nothing to depend on — the scanner is Python 3
-standard library only.
-
-## Use it with an agent
-
-`SKILL.md` is the whole interface. Any agent that loads skills from a directory
-can use this one; point it at the install path, or paste `SKILL.md` into
-whatever context mechanism your tool provides.
-
-Ask in your own words:
-
-> the docs in ./docs have gotten crufty — they read like a changelog in places,
-> can you clean them up?
-
-> audit ./docs and tell me what's wrong with the writing. don't change anything
-> yet, I want the list first
-
-The skill reads your project's own conventions first — `AGENTS.md`,
-`CLAUDE.md`, `CONTRIBUTING.md`, `.cursorrules`, a style guide, whatever you use
-— and treats what it finds as protected.
-
-## Use it without an agent
-
-The scanner is a plain CLI. It reports candidates; a human decides.
+Clone the repository and point the installer at the rules directory Cursor reads:
 
 ```bash
-python3 scripts/scan.py docs README.md      # candidates, grouped by class
+git clone https://github.com/benjaminsky/metadiscourse-audit
+cd metadiscourse-audit && ./install.sh --dir .cursor/rules
+```
+
+### Codex CLI
+
+Clone the repository and install it anywhere Codex loads instructions from, then reference `SKILL.md` from your `AGENTS.md`:
+
+```bash
+git clone https://github.com/benjaminsky/metadiscourse-audit
+cd metadiscourse-audit && ./install.sh --dir ~/.codex/skills
+```
+
+### Gemini CLI
+
+Same shape — clone, install to a directory the CLI reads, and reference `SKILL.md` from your project instructions:
+
+```bash
+git clone https://github.com/benjaminsky/metadiscourse-audit
+cd metadiscourse-audit && ./install.sh --dir ~/.gemini/skills
+```
+
+### Any other agent
+
+`skills/metadiscourse-audit/SKILL.md` is the whole interface. It is a Markdown file with YAML frontmatter and no tool-specific syntax, so any agent that can load instructions from a directory can use it. Clone the repository and either point your agent at `skills/metadiscourse-audit/`, or paste `SKILL.md` into whatever context mechanism your tool provides. `references/classes.md` is loaded on demand, only when a finding is ambiguous.
+
+### No agent at all
+
+The scanner is a plain command-line tool. Python 3 standard library, no dependencies, no install step:
+
+```bash
+git clone https://github.com/benjaminsky/metadiscourse-audit
+python3 metadiscourse-audit/skills/metadiscourse-audit/scripts/scan.py docs README.md
+```
+
+It reports candidates grouped by class. A human decides what to do with them.
+
+```bash
 python3 scripts/scan.py docs --class 0      # iteration artifacts only
 python3 scripts/scan.py docs --json         # machine-readable
-python3 scripts/scan.py docs --check        # exit 1 on any finding, for CI
+python3 scripts/scan.py docs --check        # exit 1 on any finding
 python3 scripts/scan.py docs --fix --dry-run
 ```
 
-`--fix` applies only rewrites whose removal cannot lose a fact — stripping a
-"worth …" wrapper, removing "it is worth noting that". Expect single digits on
-a large corpus, often zero. Everything valuable needs a human to decide what the
-surviving fact is, and keeping `--fix` that narrow is what makes it safe to run
-unattended.
-
-A CI gate on iteration artifacts only, which is the class with an objective
-test:
+For CI, gate on iteration artifacts alone — that is the class with an objective test:
 
 ```bash
 python3 scripts/scan.py docs --class 0 --check
 ```
 
+`--fix` applies only the rewrites whose removal cannot lose a fact: stripping a "worth …" wrapper, removing "it is worth noting that". Expect single digits across a large corpus, often zero. Everything else needs someone to decide what the surviving fact is, and keeping `--fix` that narrow is what makes it safe to run unattended.
+
 ## What it will not do
 
-**It will not touch your records.** A document is either the events or a
-projection of them, never both. A dated plan, spec, ADR, RFC or changelog is an
-*event* — written once, read as of its date, and its "previously / now"
-language is its content. Those are excluded by default. A README or runbook is a
-*projection* of those events onto now, and that is what gets audited.
+It will not touch your records. Dated plans, specs, ADRs, RFCs and changelogs are excluded by default. On two real repositories, record documents accounted for 175 of 234 and 117 of 121 of all raw findings — left in, they bury everything that matters.
 
-On two real repositories, record documents were 175 of 234 and 117 of 121 of all
-raw findings. Left in, they bury everything that matters.
+It will not strip your conventions. If your rules say that stated and inferred are never blurred, your evidence tags are load-bearing. If you version your rule sets, the version identifiers are load-bearing. It reads those rules before it scans anything.
 
-**It will not strip your conventions.** A repo whose rules say "stated vs
-inferred is never blurred" needs its evidence tags; a repo that versions its
-rules needs the version identifiers. Getting this wrong is the main way an audit
-like this does damage, so the skill reads those rules before it scans anything.
+It is not a general prose linter. It does not scrub AI writing voice out of freshly generated text, find documentation that has gone stale relative to your code, generate changelogs, reconcile contradictory content, translate, proofread, or clean up code.
 
-## Layout
+## What is in here
 
-```
-SKILL.md          the workflow an agent follows
-install.sh        put it where your agent looks
-references/       the twelve classes, with worked examples and rewrites
-scripts/scan.py   the scanner — stdlib only, runs from any cwd
-evals/            task prompts with planted fixtures, and a trigger eval set
-```
-
-## Scope
-
-This is for prose that has drifted through revision. It is not for scrubbing AI
-writing voice out of freshly generated text, finding docs stale relative to
-code, generating changelogs, reconciling contradictory content, translating,
-proofreading, or cleaning up code.
+`skills/metadiscourse-audit/` is the skill: `SKILL.md` is the workflow your agent follows, and `references/classes.md` holds the full taxonomy — twelve classes, worked examples drawn from four unrelated repositories, the rewrite for each, and the five families of false positive that account for most of what you will discard. `scripts/scan.py` is the scanner. At the repo root, `.claude-plugin/` holds the plugin and marketplace manifests, and `evals/` carries task prompts with planted fixtures plus a trigger eval set for tuning the skill description.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT.
