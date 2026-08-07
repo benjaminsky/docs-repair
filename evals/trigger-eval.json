@@ -1,0 +1,23 @@
+[
+  {"query": "our docs/ folder has gotten out of hand. every other paragraph is like 'previously we used X but now we use Y' and there are three different 'Status: 2025-11-04' stamps in the architecture doc. can you go through and make it read like it was written today?", "should_trigger": true},
+  {"query": "I've been editing this ADR-adjacent design doc for like four months and it's turned into a changelog. half of it is arguing with earlier versions of itself. help me get it back to just describing the system", "should_trigger": true},
+  {"query": "before I send docs/onboarding.md to the new hire, can you clean it up? it's accurate but it's exhausting to read — tons of 'it's worth noting that' and every section announces how many bullets are coming", "should_trigger": true},
+  {"query": "we're writing a documentation style guide for the team. can you look at what's actually wrong with our current docs first so the guide is based on real examples rather than my opinions", "should_trigger": true},
+  {"query": "audit the markdown in ./docs and give me a list of everything that reads like process residue rather than actual content. don't edit anything yet", "should_trigger": true},
+  {"query": "the README is 400 lines and I think maybe 250 of it is real. tighten it", "should_trigger": true},
+  {"query": "every one of our design docs buries the important caveat in the middle of a paragraph. is there a systematic way to find those and move them to footnotes?", "should_trigger": true},
+  {"query": "three of our docs each claim to contain 'the single most important thing about the pipeline' and they're all different things. can you sort that out across the whole doc set", "should_trigger": true},
+  {"query": "de-cruft docs/architecture.md and docs/data-model.md — they were written by three people over a year and it shows", "should_trigger": true},
+
+  {"query": "this blog post I drafted reads like ChatGPT wrote it — too many em dashes, 'in today's fast-paced landscape', that kind of thing. can you make it sound human?", "should_trigger": false},
+  {"query": "generate a CHANGELOG.md from the last 40 commits, grouped by feat/fix/chore, following keep-a-changelog format", "should_trigger": false},
+  {"query": "our docs reference `getUserToken()` but that function was renamed to `fetchSessionToken()` six months ago. find every doc that's out of date relative to the actual code and fix the references", "should_trigger": false},
+  {"query": "set up Vale in CI for the docs folder with the Google style guide and a custom vocab file for our product names", "should_trigger": false},
+  {"query": "review this PR description before I post it — is it clear enough about what changed and why?", "should_trigger": false},
+  {"query": "the API reference is missing examples for half the endpoints. can you write request/response samples for the ones that don't have them", "should_trigger": false},
+  {"query": "translate docs/quickstart.md into Spanish, keeping the code blocks as-is", "should_trigger": false},
+  {"query": "we have four docs that all partially explain the auth flow and they contradict each other. figure out which one is right and consolidate them into one", "should_trigger": false},
+  {"query": "clean up this module — there's dead code, duplicated helpers, and a couple of abstractions that only have one caller", "should_trigger": false},
+  {"query": "proofread docs/pricing.md for typos and grammar mistakes before it goes on the marketing site", "should_trigger": false},
+  {"query": "summarize what changed in the docs between v2.3 and v2.4 so I can put it in the release notes", "should_trigger": false}
+]

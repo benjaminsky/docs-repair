@@ -1,0 +1,32 @@
+{
+  "skill_name": "metadiscourse-audit",
+  "evals": [
+    {
+      "id": 0,
+      "name": "crufty-docs-cleanup",
+      "prompt": "the docs in ./evals/fixtures/repo-a have gotten crufty \u2014 they read like a changelog in places. can you go through them and clean it up?",
+      "expected_output": "Version changelogs and the dated status stamp removed with live facts preserved; the [V]/[H] evidence tags left intact; docs/adr/ untouched.",
+      "files": [
+        "fixtures/repo-a"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "audit-only-no-edits",
+      "prompt": "audit ./evals/fixtures/repo-a/docs and tell me what's wrong with the writing. don't change anything yet, I want the list first",
+      "expected_output": "A file:line inventory with verdicts and rewrites, no files modified.",
+      "files": [
+        "fixtures/repo-a"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "single-file-tighten",
+      "prompt": "tighten up ./evals/fixtures/repo-b/docs/api.md",
+      "expected_output": "Staging tics removed; ideally notes the corpus is wider than one file.",
+      "files": [
+        "fixtures/repo-b"
+      ]
+    }
+  ]
+}
