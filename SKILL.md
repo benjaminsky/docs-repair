@@ -43,8 +43,11 @@ accounts for half the findings and all of the uncontroversial ones.
 
 ## Step 1 — read the project's conventions first
 
-**Do this before scanning.** Read `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`,
-and any style or writing guide in the repo.
+**Do this before scanning.** Read whatever the project uses to state its own
+rules — `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `.cursorrules`,
+`.github/copilot-instructions.md`, `docs/style.md`, a `STYLEGUIDE`, or a
+writing section in the README. Any one of them can define a convention this
+audit would otherwise strip.
 
 Projects encode conventions that *require* metadiscourse, and a scan that
 doesn't know about them will confidently strip the thing the project depends
