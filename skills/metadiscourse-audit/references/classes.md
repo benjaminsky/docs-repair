@@ -258,6 +258,7 @@ test. Ordered by how much volume they typically carry.
 The document describing itself or how it should be read.
 
 > **How to read this.** Every claim is tagged: → **Cut the label**, keep the legend.
+> **How to read this.** Every endpoint lists its method and path. → **Cut the line.** When the "legend" restates what the page shows anyway, there is nothing to keep.
 > **A note on schema verification.** Direct egress is blocked… → **Cut the label**; the paragraph stands alone.
 > Work is tracked as GitHub issues; this is the shape, not a substitute for them. → **Cut.**
 > **Status: design only. Nothing here is built.** → **Keep.** A real scope claim.

@@ -268,7 +268,9 @@ dirtier files.
 Audit a **doc set**, not a single file. The collision pass needs the corpus,
 and density comparisons are what identify the files worth editing. A
 single-file request is still worth widening: scan the set, report the file
-they asked about first.
+they asked about first. When the set turns out to *be* one file, say so and
+carry on — widening means the rest of that project's docs, never unrelated
+corpora that happen to sit nearby.
 
 If the corpus is large, do classes 0 and 0.5 across everything first and
 report those before starting the judgement pass. They are the findings most
