@@ -4,7 +4,7 @@ Metadiscourse Audit finds and removes the text in your documentation whose subje
 
 ## Quickstart
 
-Give your agent the audit: [Claude Code](#claude-code), [Cursor](#cursor), [Codex CLI](#codex-cli), [Gemini CLI](#gemini-cli), [any other agent](#any-other-agent), or [no agent at all](#no-agent-at-all).
+Give your agent the audit: [Claude Code](#claude-code), [any agent that reads AGENTS.md](#any-agent-that-reads-agentsmd), or [no agent at all](#no-agent-at-all).
 
 ## How it works
 
@@ -116,36 +116,24 @@ cd metadiscourse-audit && ./install.sh
 
 That installs to `~/.claude/skills/metadiscourse-audit`. Pass `--project` to install into the current repo instead, `--link` to symlink so `git pull` updates it in place, or `--uninstall` to remove it. It will not overwrite a directory it did not create.
 
-### Cursor
+### Any agent that reads AGENTS.md
 
-Clone the repository and point the installer at the rules directory Cursor reads:
-
-```bash
-git clone https://github.com/benjaminsky/metadiscourse-audit
-cd metadiscourse-audit && ./install.sh --dir .cursor/rules
-```
-
-### Codex CLI
-
-Clone the repository and install it anywhere Codex loads instructions from, then reference `SKILL.md` from your `AGENTS.md`:
+`AGENTS.md` is the portable route — Codex, Cursor, Copilot, Gemini CLI, Aider, Windsurf and Zed all read it. Clone the repository somewhere your agent can see, then point at the skill from your `AGENTS.md`:
 
 ```bash
-git clone https://github.com/benjaminsky/metadiscourse-audit
-cd metadiscourse-audit && ./install.sh --dir ~/.codex/skills
+git clone https://github.com/benjaminsky/metadiscourse-audit .agent/metadiscourse-audit
 ```
 
-### Gemini CLI
+```markdown
+## Documentation
 
-Same shape — clone, install to a directory the CLI reads, and reference `SKILL.md` from your project instructions:
-
-```bash
-git clone https://github.com/benjaminsky/metadiscourse-audit
-cd metadiscourse-audit && ./install.sh --dir ~/.gemini/skills
+When asked to clean up, tighten or de-cruft docs, follow
+`.agent/metadiscourse-audit/skills/metadiscourse-audit/SKILL.md`.
 ```
 
-### Any other agent
+`SKILL.md` is plain Markdown with YAML frontmatter and no tool-specific syntax, so nothing needs translating. `references/classes.md` is loaded on demand, only when a finding is ambiguous.
 
-`skills/metadiscourse-audit/SKILL.md` is the whole interface. It is a Markdown file with YAML frontmatter and no tool-specific syntax, so any agent that can load instructions from a directory can use it. Clone the repository and either point your agent at `skills/metadiscourse-audit/`, or paste `SKILL.md` into whatever context mechanism your tool provides. `references/classes.md` is loaded on demand, only when a finding is ambiguous.
+Cursor's own `.cursor/rules/*.mdc` format expects MDC files rather than a skill directory, so use the `AGENTS.md` route there too — Cursor reads it natively.
 
 ### No agent at all
 
