@@ -183,6 +183,104 @@ class TestNewPatterns(unittest.TestCase):
         self.assertIn("6", classes_of(found))
 
 
+class TestCodeComments(unittest.TestCase):
+    def test_hash_comment_is_scanned(self):
+        found = scan_text("RETRIES = 3  # previously the default was five\n",
+                          name="mod.py")
+        self.assertIn("0a", classes_of(found))
+
+    def test_hash_inside_a_string_is_not_a_comment(self):
+        # The whitespace-before-marker rule: the "#" sits against a quote.
+        found = scan_text('MARKER = "#previously a draft note"\n',
+                          name="mod.py")
+        self.assertEqual(found, [])
+
+    def test_slash_comment_is_scanned(self):
+        found = scan_text("const t = 10; // the timeout was previously 30s\n",
+                          name="mod.ts")
+        self.assertIn("0a", classes_of(found))
+
+    def test_url_is_not_a_comment(self):
+        # The "//" in a URL sits against a colon.
+        found = scan_text('const u = "https://x.test/previously";\n',
+                          name="mod.ts")
+        self.assertEqual(found, [])
+
+    def test_block_comment_spans_lines_with_real_linenos(self):
+        found = scan_text("/*\n"
+                          " * The parser now sniffs the delimiter.\n"
+                          " */\n"
+                          "parse();\n", name="mod.c")
+        hits = [f for f in found if f["class"] == "0b"]
+        self.assertEqual(1, len(hits))
+        self.assertEqual(2, hits[0]["line"])
+
+    def test_todo_is_a_tracker_item_not_a_finding(self):
+        found = scan_text("# TODO: retries are not yet implemented\n",
+                          name="mod.py")
+        self.assertEqual(found, [])
+
+    def test_the_same_promise_without_a_marker_is_a_finding(self):
+        found = scan_text("# retries are not yet implemented\n",
+                          name="mod.py")
+        self.assertIn("0d", classes_of(found))
+
+    def test_linter_directives_are_not_prose(self):
+        found = scan_text("alert(1) // eslint-disable-line -- previously "
+                          "required\n", name="mod.js")
+        self.assertEqual(found, [])
+
+    def test_comment_block_wraps_like_a_paragraph(self):
+        found = scan_text("# The backoff table is the\n"
+                          "# least defensible thing here.\n", name="mod.py")
+        hits = [f for f in found if f["class"] == "6"]
+        self.assertEqual(1, len(hits))
+        self.assertEqual(1, hits[0]["line"])
+
+    def test_line_count_is_comment_lines_only(self):
+        # Density for a source file divides by scanned prose, not by code.
+        text = ("import os\n"
+                "# one comment line\n"
+                "x = 1\n"
+                "y = 2\n")
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "mod.py")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(text)
+            _, n_lines = scan.scan_file(path)
+        self.assertEqual(1, n_lines)
+
+
+class TestCollectCode(unittest.TestCase):
+    def test_directory_walk_takes_code_only_with_the_flag(self):
+        with tempfile.TemporaryDirectory() as d:
+            for name in ("doc.md", "mod.py"):
+                with open(os.path.join(d, name), "w", encoding="utf-8") as fh:
+                    fh.write("x\n")
+            files, _, code_seen = scan.collect([d])
+            self.assertEqual([os.path.join(d, "doc.md")], files)
+            self.assertEqual(1, code_seen)
+            files, _, code_seen = scan.collect([d], include_code=True)
+            self.assertEqual({"doc.md", "mod.py"},
+                             {os.path.basename(f) for f in files})
+            self.assertEqual(0, code_seen)
+
+    def test_a_named_code_file_needs_no_flag(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "mod.py")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write("x = 1\n")
+            files, _, _ = scan.collect([path])
+            self.assertEqual([path], files)
+
+    def test_fix_never_counts_code_files(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "mod.py")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write("# It is worth noting that the cache is an LRU.\n")
+            self.assertEqual(scan.count_safe_fixes([path]), 0)
+
+
 class TestSafeFixes(unittest.TestCase):
     def check(self, before, after):
         new, changes = scan.apply_safe_fixes(before)

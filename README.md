@@ -218,9 +218,16 @@ It reports candidates grouped by class. A human decides what to do with them.
 ```bash
 python3 "$SCAN" docs --class 0      # iteration artifacts only
 python3 "$SCAN" docs --json         # machine-readable
+python3 "$SCAN" docs src --code     # also scan code comments
 python3 "$SCAN" docs --check        # exit 1 on any finding
 python3 "$SCAN" docs --fix --dry-run
 ```
+
+Code comments collect the same debris — `# previously five` beside a
+constant, `// now sniffs the delimiter` above the function that just does.
+`--code` extends a scan to source-file comments; a source file named on the
+command line needs no flag. TODO and FIXME lines are left alone — a TODO is
+a tracker item living in code, and its "not yet" is its content.
 
 For CI, gate on iteration artifacts alone — that is the class with an objective test:
 
@@ -228,7 +235,7 @@ For CI, gate on iteration artifacts alone — that is the class with an objectiv
 python3 "$SCAN" docs --class 0 --check
 ```
 
-`--fix` applies only the rewrites whose removal cannot lose a fact: stripping a "worth …" wrapper, removing "it is worth noting that". Expect single digits across a large corpus, often zero. Everything else needs someone to decide what the surviving fact is, and keeping `--fix` that narrow is what makes it safe to run unattended.
+`--fix` applies only the rewrites whose removal cannot lose a fact: stripping a "worth …" wrapper, removing "it is worth noting that". Expect single digits across a large corpus, often zero. It never rewrites a source file — comment extraction is heuristic, so those findings stay in human hands. Everything else needs someone to decide what the surviving fact is, and keeping `--fix` that narrow is what makes it safe to run unattended.
 
 ## A worked run
 
