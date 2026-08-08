@@ -123,7 +123,9 @@ not findings**. Expect to discard roughly a third — `references/classes.md`
 lists the six families that account for most of them, and reading that section
 before triaging saves re-deriving them.
 
-It groups by class, and separately reports **collisions** — superlatives and
+It groups by class, and one line can honestly carry two — a dated stamp
+wrapped around a tracker claim is 0c *and* 0d. Triage such a pair as one
+finding. It separately reports **collisions** — superlatives and
 aphorisms repeated across files. That pass only works corpus-wide, and it is
 often the most useful single output: four documents each claiming to hold
 "the single most important thing" cancel each other out, and no individual

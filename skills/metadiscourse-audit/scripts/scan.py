@@ -684,6 +684,8 @@ def main():
                       f"({s['findings']} in {s['lines']} lines)")
         if clean:
             print(f"\nclean: {', '.join(clean)}")
+        else:
+            print("\nclean: none — every scanned file has candidates")
         print(f"\n{len(findings)} candidate(s) across {len(files)} file(s).")
         if records:
             print(f"Skipped {len(records)} point-in-time record(s) — dated plans, "
