@@ -1,6 +1,6 @@
 ---
 name: metadiscourse-audit
-description: Clean up, tighten or de-cruft existing prose docs — a README, a docs/ folder, a design doc — by stripping out metadiscourse, meaning text whose subject is the document, its author or its reader rather than the thing it documents. Targets what revision leaves behind — changelogs written into prose ("previously X, now Y"), a document arguing with its own earlier drafts, dated status stamps, caveats buried mid-paragraph that belong in a footnote — plus staging tics like announcing how many bullets follow, "it's worth noting", headings that argue instead of naming, and the same superlative claimed in four different files. Returns a file:line inventory with cut/fold/move/keep verdicts and a concrete rewrite for each, and can apply the safe subset. Use it whenever docs are called bloated, padded, repetitive or exhausting, whenever they read like a changelog or carry "how we got here" that belongs in git, whenever someone wants docs to stand alone in the present tense, whenever they want the findings list before any edits, and whenever they ask for a documentation style guide — the audit is what the guidance should be built from. Not for scrubbing AI writing voice out of freshly generated text, finding docs stale relative to code, generating changelogs or release notes, reconciling contradictory content, translating, proofreading, or cleaning up code.
+description: Clean up, tighten or de-cruft existing prose docs — a README, a docs/ folder, a design doc, the comments in source files — by stripping out metadiscourse, meaning text whose subject is the document, its author or its reader rather than the thing it documents. Targets what revision leaves behind — changelogs written into prose ("previously X, now Y"), a document arguing with its own earlier drafts, dated status stamps, caveats buried mid-paragraph that belong in a footnote — plus staging tics like announcing how many bullets follow, "it's worth noting", headings that argue instead of naming, and the same superlative claimed in four different files. Returns a file:line inventory with cut/fold/move/keep verdicts and a concrete rewrite for each, and can apply the safe subset. Use it whenever docs are called bloated, padded, repetitive or exhausting, whenever they read like a changelog or carry "how we got here" that belongs in git, whenever someone wants docs to stand alone in the present tense, whenever they want the findings list before any edits, and whenever they ask for a documentation style guide — the audit is what the guidance should be built from. Not for scrubbing AI writing voice out of freshly generated text, finding docs stale relative to code, generating changelogs or release notes, reconciling contradictory content, translating, proofreading, or cleaning up code itself — comments are in scope, the code around them is not.
 ---
 
 # Metadiscourse audit
@@ -126,6 +126,7 @@ or the project's `.claude/skills/` copy. Then:
 python3 "$SCAN" docs README.md --exclude drafts/
 python3 "$SCAN" docs --class 0            # iteration artifacts only (0a-0d)
 python3 "$SCAN" docs --json               # machine-readable
+python3 "$SCAN" docs src --code           # also scan code comments
 python3 "$SCAN" docs --include-records    # override the exclusion
 python3 "$SCAN" docs --class 0 --check    # CI gate: exit 1 on findings
 ```
@@ -153,6 +154,30 @@ the clean list is what a later rewrite must not regress.
 Read the surrounding paragraph for every candidate you keep. The scanner sees
 one line; whether a caveat interrupts the main line is a property of the
 paragraph.
+
+### Code comments
+
+The same debris accumulates next to code — `# previously five` beside a
+constant, `// now sniffs the delimiter` above the function that just does —
+and the classes apply unchanged. `--code` extends a directory walk to source
+files; a source file named on the command line is scanned without the flag,
+because naming it is the request.
+
+Three differences from prose:
+
+- **TODO, FIXME and their relatives are skipped**, along with linter
+  directives and shebangs. A TODO is a tracker item living in code —
+  greppable by convention, its "not yet" is its content — where the same
+  promise in a standing doc is class 0d.
+- **Docstrings are out of scope.** A triple-quoted string is data as often
+  as documentation, and a guess that misjudges one reads string literals as
+  prose. Comments only.
+- **`--fix` never rewrites a source file.** Comment extraction is heuristic,
+  and a rewrite applied to a misjudged string literal edits the program.
+  Every comment finding is applied by hand, with Edit.
+
+A source file's density divides by its comment lines, not its total lines,
+so the density table still compares prose against prose.
 
 ## Step 4 — classify and decide
 
@@ -221,7 +246,8 @@ near-miss: `Two hard rules:` → `Hard rules:` looks mechanical, but "Two
 independent defences" carries an argument that depends on there being two, and
 "Three passes" tells a reader how long the list is before they start it. So
 counts are reported as class 4 for a human to judge and never auto-stripped.
-Keeping `--fix` this small is what makes it safe to run unattended.
+Source files are refused outright — comment findings are report-only through
+`--fix`. Keeping `--fix` this small is what makes it safe to run unattended.
 
 Everything else you apply by hand, with Edit, one finding at a time. When you
 do:

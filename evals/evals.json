@@ -27,6 +27,15 @@
       "files": [
         "fixtures/repo-b"
       ]
+    },
+    {
+      "id": 3,
+      "name": "code-comment-audit",
+      "prompt": "the comments in ./evals/fixtures/repo-a/src have the same problem as the docs — audit them and give me the list, don't edit anything",
+      "expected_output": "A file:line inventory over ingest.py's comments (previously/now/currently and the wrapped superlative); the TODO line and the in-string hash not flagged; no file modified.",
+      "files": [
+        "fixtures/repo-a"
+      ]
     }
   ]
 }

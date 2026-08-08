@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scan markdown for metadiscourse candidates.
+"""Scan markdown — and, with --code, code comments — for metadiscourse candidates.
 
 Cheap mechanical pass. Produces candidates with file:line and a suggested
 class; a reader still decides. Deliberately over-reports — a false positive
@@ -9,9 +9,15 @@ Usage:
     scan.py <path>...                    # scan files or directories
     scan.py <path>... --json             # machine-readable
     scan.py <path>... --class 0          # iteration artifacts only (0a-0d)
+    scan.py <path>... --code             # also scan code comments
     scan.py <path>... --fix              # apply the safe rewrites only
     scan.py <path>... --fix --dry-run    # show what --fix would change
     scan.py <path>... --check            # exit 1 on any finding (CI gate)
+
+A source file named on the command line is scanned without --code — naming
+the file is the request. Directory walks pick up code only with the flag.
+--fix never rewrites a source file: comment extraction is heuristic, and a
+rewrite applied to a misjudged string literal edits the program.
 
 Exit status is 0 unless --check is passed, in which case any finding exits 1.
 """
@@ -53,12 +59,19 @@ def plain_text(line):
 PATTERNS = [
     # --- Class 0: iteration artifacts ---------------------------------------
     ("0a", "prior-state reference", re.compile(
-        r"\b(previously|formerly|used to (?:be|require|assume|say|live|return"
-        r"|default|mean|work|take|have)\b|an earlier (?:version|note|draft|section)"
+        r"\b(previously|formerly|an earlier (?:version|note|draft|section)"
         r"|the (?:previous|old) (?:version|revision|draft|behaviou?r|implementation)"
         r"|the original (?:table|version|note|plan)|first version|initial version"
         r"|we (?:had|thought|concluded|assumed)|no longer|has since|since then"
         r"|what we had)\b", re.I)),
+    # "used to <verb>" gets its own entry because it needs its own suppressor.
+    # The verb slot is open: a fixed list ("be|require|assume|say|live|…") was
+    # measured against every "used to" in a 25k-line TypeScript corpus and
+    # caught 4 of 17 real artifacts — it missed "used to ride", "used to keep",
+    # "used to sit", "used to seed", "used to escape". Enumerating the verbs a
+    # writer might reach for is the losing side of this; the purpose sense
+    # below is the thing worth naming.
+    ("0a", "past-habitual 'used to'", re.compile(r"\bused to \w+", re.I)),
     ("0a", "self-correction", re.compile(
         r"\b(was wrong|were wrong|got wrong|measured wrong|misread|mistakenly"
         r"|wrongly|superseded|revised|half right|overturn(?:ed|s)?"
@@ -138,9 +151,13 @@ PATTERNS = [
         r"|how to read this|the point of writing|for the record"
         r"|a note on\b|notes on\b)", re.I)),
     ("2", "navigation", re.compile(
+        # "read … first" is an instruction to the reader; "a mortgage read as
+        # first-year spending" is a sentence about mortgages. The two guards
+        # are what separate them: an ordinal-as-adjective takes a hyphen, and
+        # "read as" is describing, not directing.
         r"\b(see (?:§|section|above|below)|as (?:noted|mentioned|discussed|described)"
         r" (?:above|below|earlier)|the (?:table|section|list|point) (?:above|below)"
-        r"|stop reading|read .{0,20}first)\b", re.I)),
+        r"|stop reading|read (?!as\b).{0,20}first(?![-\w]))\b", re.I)),
     ("3", "walking the reader", re.compile(
         # The writer narrating the reading experience instead of stating the
         # next fact. "Let's say / assume / define" survives: that is the
@@ -164,7 +181,10 @@ PATTERNS = [
         r"\b(Two|Three|Four|Five|Six|Seven) (things|further|more|hard|key|reasons"
         r"|consequences|caveats|rules|priors|gaps|ways|independent|separate)\b")),
     ("5", "'worth X' attitude marker", re.compile(
-        r"\bworth (a\b|the\b|it\b|\d|noting|knowing|remembering|mentioning"
+        # "(?<!net )" because "net worth the plan opens with" is a balance
+        # sheet, not an attitude. Any financial corpus trips this on every
+        # mention of the domain's central quantity.
+        r"(?<!net )\bworth (a\b|the\b|it\b|\d|noting|knowing|remembering|mentioning"
         r"|recording|carrying|defending|deciding|re-?checking|a glance)", re.I)),
     ("6", "salience superlative", re.compile(
         # "(?!recent)" because "the most recent snapshot" selects among live
@@ -230,13 +250,36 @@ SUPPRESS = {
     # "the most recent snapshot wins" selects among live data; it does not
     # date the prose.
     "recency marker": re.compile(r"\bmost recent(?:ly)?\b", re.I),
+    # "used to" has a second sense that dominates code comments: the reduced
+    # relative clause, "a key [that is] used to share the SDK" — employed in
+    # order to, not did-so-formerly. It hangs off an appositive (comma, dash,
+    # paren) or a for-/of-headed noun phrase, which is what this matches.
+    #
+    # A sentence boundary is the other tell, and this one is categorical: the
+    # habitual sense needs a subject ("the catalog used to seed"), so it can
+    # never open a sentence, while the purpose sense does it freely — "…1.6% of
+    # the car's value per month. Used to derive a lease payment."
+    #
+    # Measured against every "used to" in a 25k-line TypeScript corpus: 17
+    # past-habitual, 9 purpose. Open verb slot alone fires on all 26; with this
+    # suppressor it keeps 17/17 real and drops 7 of the 9. The survivors are
+    # bare noun-phrase definitions ("Static module metadata used to build
+    # params") that no rule separated from "The catalog used to seed" without
+    # losing real ones — two glances against thirteen artifacts the fixed verb
+    # list was missing.
+    #
+    # A line-initial "used to" is NOT a sentence opener, it is a soft wrap with
+    # its subject on the line above, so the boundary branch requires the stop.
+    "past-habitual 'used to'": re.compile(
+        r"(?:[,(]\s*|[—–-]\s*|\.\s+|\b(?:for|of)\b[^.;]{0,30})used to \w+", re.I),
 }
 
 # Labels whose suppressor must overlap the finding itself, not merely appear
 # somewhere on the line. "X has been added back. Once Y has been uploaded, ..."
 # holds a real changelog and a runtime condition in one line; suppressing by
-# line would let the condition shield the changelog.
-POSITIONAL_SUPPRESS = {"perfect-tense changelog"}
+# line would let the condition shield the changelog. A line carrying both
+# senses of "used to" is the same hazard.
+POSITIONAL_SUPPRESS = {"perfect-tense changelog", "past-habitual 'used to'"}
 
 # Path-level suppressors: some classes are genre, not cruft. A tutorial walks
 # the reader by contract — flagging every "let's" in a quickstart would report
@@ -308,9 +351,12 @@ def _strip_phrase(pat, line):
 def count_safe_fixes(files):
     """How many lines across *files* --fix would rewrite. Reported at the end
     of a plain scan so the mechanical subset is discoverable from the output
-    itself, not just from --help."""
+    itself, not just from --help. Source files count zero: --fix refuses
+    them, so advertising their phrases as fixable would be a lie."""
     n = 0
     for path in files:
+        if comment_syntax(path):
+            continue
         with open(path, encoding="utf-8") as fh:
             lines = fh.read().splitlines()
         for _, line in prose_lines(lines):
@@ -389,6 +435,115 @@ def prose_lines(lines):
         yield n, line
 
 
+# ---------------------------------------------------------------------------
+# Code comments. The same debris accumulates next to code — "# previously
+# five", "// now sniffs the delimiter" — and the same patterns apply.
+#
+# Per extension: (line markers, block open, block close). Docstrings are out
+# of scope: a triple-quoted string is data as often as documentation, and a
+# guess that misjudges one reads string literals as prose. A comment marker is
+# unambiguous; a string never is.
+# ---------------------------------------------------------------------------
+
+COMMENT_SYNTAX = {}
+for _ext in (".py .sh .bash .zsh .rb .pl .r .jl .yaml .yml .toml .tf .nix "
+             ".cmake .mk .ex .exs").split():
+    COMMENT_SYNTAX[_ext] = (("#",), None, None)
+for _ext in (".js .jsx .mjs .cjs .ts .tsx .c .h .cc .hh .cpp .hpp .java .go "
+             ".rs .swift .kt .kts .scala .cs .dart .m .mm .proto").split():
+    COMMENT_SYNTAX[_ext] = (("//",), "/*", "*/")
+for _ext in ".sql .lua .hs".split():
+    COMMENT_SYNTAX[_ext] = (("--",), None, None)
+COMMENT_SYNTAX[".php"] = (("//", "#"), "/*", "*/")
+
+CODE_BASENAMES = {"Makefile", "makefile", "GNUmakefile", "Dockerfile",
+                  "Justfile", "justfile"}
+
+
+def comment_syntax(path):
+    """The comment spec for path, or None for a non-code file."""
+    base = os.path.basename(path)
+    if base in CODE_BASENAMES:
+        return (("#",), None, None)
+    return COMMENT_SYNTAX.get(os.path.splitext(base)[1].lower())
+
+
+# Machine-directed comments are not prose: linter and formatter pragmas,
+# editor modelines, encoding declarations.
+DIRECTIVE = re.compile(
+    r"^(?:-\*-|noqa|type:|pylint|mypy:|ruff:|flake8:|isort:|fmt:|yapf:"
+    r"|eslint|prettier|biome-|@ts-|tslint:|jshint|istanbul|nolint|nosec"
+    r"|NOSONAR|pragma|coverage:|cspell:|spell-?checker:|vim:|vi:"
+    r"|region\b|endregion\b)", re.I)
+
+# TODO and its relatives are tracker items living in code — greppable by
+# convention, and their "not yet" language is their content, the same way a
+# record doc's "previously / now" is. Flagging every TODO would bury the
+# findings under a backlog nobody asked to audit.
+WORK_MARKER = re.compile(r"^(?:TODO|FIXME|XXX|HACK|BUG|todo|fixme)\b")
+
+
+def _find_marker(line, marker):
+    """Index of marker where it can start a comment: at column 0 or after
+    whitespace. One rule covers the two big false extractions — "#" inside a
+    string sits against a quote ('x = "#tag"'), and the "//" in a URL sits
+    against a colon — at the cost of missing the rare unspaced trailer."""
+    i = 0
+    while True:
+        i = line.find(marker, i)
+        if i <= 0:
+            return i
+        if line[i - 1] in " \t":
+            return i
+        i += 1
+
+
+def comment_lines(lines, syntax):
+    """Yield (lineno, text) for the comment prose in a source file.
+
+    Skips shebangs, machine directives, work markers and pure-decoration
+    banners; strips the "*" gutter of block comments and stacked markers
+    ("##", "///"). Extraction is heuristic — a "#" after a space inside a
+    string will be read as a comment — which is why --fix refuses source
+    files and these lines are report-only.
+    """
+    markers, bopen, bclose = syntax
+    in_block = False
+    for n, line in enumerate(lines, 1):
+        if n == 1 and line.startswith("#!"):
+            continue
+        if in_block:
+            end = line.find(bclose)
+            text = line if end == -1 else line[:end]
+            in_block = end == -1
+        else:
+            best = None
+            for mk in markers:
+                p = _find_marker(line, mk)
+                if p != -1 and (best is None or p < best[0]):
+                    best = (p, mk, False)
+            if bopen:
+                p = _find_marker(line, bopen)
+                if p != -1 and (best is None or p < best[0]):
+                    best = (p, bopen, True)
+            if best is None:
+                continue
+            pos, mk, is_block = best
+            text = line[pos + len(mk):]
+            if is_block:
+                end = text.find(bclose)
+                if end == -1:
+                    in_block = True
+                else:
+                    text = text[:end]
+        s = text.strip().lstrip("#*/!").strip()
+        if not s or not re.search(r"[A-Za-z]", s):
+            continue
+        if DIRECTIVE.match(s) or WORK_MARKER.match(s):
+            continue
+        yield n, s
+
+
 # A line that opens a new block — the soft-wrap join below must not glue a
 # paragraph's last line onto the heading, bullet or table row that follows it.
 BLOCK_START = re.compile(r"^\s*(#{1,6}\s|\||[-*+]\s|\d+[.)]\s|>)")
@@ -407,15 +562,9 @@ def _suppressed(label, m, text, path):
     return bool(psup and psup.search(path))
 
 
-def scan_file(path):
-    """Return (findings, line_count) for one markdown file."""
-    try:
-        with open(path, encoding="utf-8") as fh:
-            lines = fh.read().splitlines()
-    except (OSError, UnicodeDecodeError) as exc:
-        print(f"skipped {path}: {exc}", file=sys.stderr)
-        return [], 0
-
+def _scan_prose(prose, path, markdown):
+    """Run the patterns over (lineno, line) pairs. markdown gates the checks
+    that only mean anything in markdown — headings, table rows."""
     findings = []
     # One finding per class per line: a line hit by two sibling patterns is
     # still one line to read, and double-counting inflates the totals the
@@ -430,11 +579,10 @@ def scan_file(path):
                          "label": label, "match": match_text,
                          "text": shown_text})
 
-    prose = list(prose_lines(lines))
     for n, line in prose:
         plain = plain_text(line)
-        table_row = line.lstrip().startswith("|")
-        heading = line.lstrip().startswith("#")
+        table_row = markdown and line.lstrip().startswith("|")
+        heading = markdown and line.lstrip().startswith("#")
         checks = HEADING_ASSERTS + PATTERNS if heading else PATTERNS
 
         for cls, label, pat in checks:
@@ -450,13 +598,14 @@ def scan_file(path):
 
     # Soft wraps split phrases across lines — "the backoff table is the /
     # least defensible thing here" hides "the least defensible" from every
-    # per-line pattern. Join each adjacent pair inside a paragraph and keep
-    # only the matches that span the boundary: anything else the per-line
-    # pass already saw.
+    # per-line pattern. A comment block wraps the same way a paragraph does.
+    # Join each adjacent pair inside a paragraph and keep only the matches
+    # that span the boundary: anything else the per-line pass already saw.
     for (na, a), (nb, b) in zip(prose, prose[1:]):
         if nb != na + 1:
             continue
-        if a.lstrip().startswith(("#", "|")) or BLOCK_START.match(b):
+        if (markdown and a.lstrip().startswith(("#", "|"))) \
+                or BLOCK_START.match(b):
             continue
         pa = plain_text(a)
         cut = len(pa)
@@ -470,7 +619,29 @@ def scan_file(path):
                 continue
             add(na, cls, label, m.group(0).strip(),
                 a.strip() + " " + b.strip())
-    return findings, len(lines)
+    return findings
+
+
+def scan_file(path):
+    """Return (findings, line_count) for one file.
+
+    For a source file the findings come from its comments, and line_count is
+    the number of comment lines scanned — so density stays "candidates per
+    100 lines of prose" rather than being flattened by the code around it.
+    """
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"skipped {path}: {exc}", file=sys.stderr)
+        return [], 0
+
+    syntax = comment_syntax(path)
+    if syntax:
+        prose = list(comment_lines(lines, syntax))
+        return _scan_prose(prose, path, markdown=False), len(prose)
+    prose = list(prose_lines(lines))
+    return _scan_prose(prose, path, markdown=True), len(lines)
 
 
 def class_matches(cls, want):
@@ -539,33 +710,44 @@ def is_self(path, self_excludes):
     return False
 
 
-def collect(paths, excludes=(), self_excludes=(), include_records=False):
+def collect(paths, excludes=(), self_excludes=(), include_records=False,
+            include_code=False):
     """Gather markdown, minus --exclude substrings and (by default) records.
 
     Also worth excluding: a document *about* metadiscourse quotes metadiscourse
     on every line, and so does a style guide. Left in, they dominate the output.
 
-    Returns (files, skipped_records) so the caller can report what it dropped —
-    a silent exclusion reads as "nothing there".
+    Code files join a directory walk only with include_code; named on the
+    command line they are always taken, because naming the file is the
+    request. Minified files carry no prose either way.
+
+    Returns (files, skipped_records, code_seen) so the caller can report what
+    it dropped — a silent exclusion reads as "nothing there".
     """
-    files = []
+    files, code_seen = [], 0
     for p in paths:
         if os.path.isdir(p):
             for root, dirs, names in os.walk(p):
                 dirs[:] = sorted(d for d in dirs if d not in
                                  {"node_modules", ".git", "dist", "build",
                                   ".next", "vendor", ".venv", "target"})
-                files += [os.path.join(root, n) for n in sorted(names)
-                          if n.endswith((".md", ".markdown"))]
-        elif p.endswith((".md", ".markdown")):
+                for name in sorted(names):
+                    if name.endswith((".md", ".markdown")):
+                        files.append(os.path.join(root, name))
+                    elif comment_syntax(name) and ".min." not in name:
+                        if include_code:
+                            files.append(os.path.join(root, name))
+                        else:
+                            code_seen += 1
+        elif p.endswith((".md", ".markdown")) or comment_syntax(p):
             files.append(p)
     files = [f for f in files
              if not any(x in f for x in excludes)
              and not is_self(f, self_excludes)]
     if include_records:
-        return files, []
+        return files, [], code_seen
     records = [f for f in files if is_record(f)]
-    return [f for f in files if f not in set(records)], records
+    return [f for f in files if f not in set(records)], records, code_seen
 
 
 def main():
@@ -581,6 +763,8 @@ def main():
                     metavar="SUBSTR", help="skip paths containing SUBSTR (repeatable)")
     ap.add_argument("--include-records", action="store_true",
                     help="also scan dated plans/specs/ADRs (excluded by default)")
+    ap.add_argument("--code", action="store_true",
+                    help="also scan code comments when walking directories")
     args = ap.parse_args()
 
     # Exclude this skill's own prose, by resolved path rather than by name.
@@ -593,23 +777,38 @@ def main():
         os.path.join(here, "SKILL.md"),
         os.path.join(here, "README.md"),
         os.path.join(here, "references") + os.sep,
+        # The scanner's own source: its comments quote the patterns they
+        # match, so a --code run over this directory reports the detector
+        # as the disease.
+        os.path.join(here, "scripts") + os.sep,
     ]
     # Packaged as <repo>/skills/<name>/, the repo's own README documents this
     # same skill and quotes the patterns on nearly every line.
     if os.path.basename(os.path.dirname(here)) == "skills":
         self_excludes.append(os.path.join(os.path.dirname(os.path.dirname(here)),
                                           "README.md"))
-    files, records = collect(args.paths, args.exclude, self_excludes,
-                             args.include_records)
+    files, records, code_seen = collect(args.paths, args.exclude, self_excludes,
+                                        args.include_records, args.code)
     if not files:
-        print("no standing markdown found"
-              + (f" ({len(records)} record docs skipped)" if records else ""),
-              file=sys.stderr)
+        note = ""
+        if records:
+            note += f" ({len(records)} record docs skipped)"
+        if code_seen:
+            note += (f" ({code_seen} code file(s) present — "
+                     "--code scans their comments)")
+        print("no standing markdown found" + note, file=sys.stderr)
         return 2
 
     if args.fix:
         total = 0
+        code_files = 0
         for path in files:
+            # Never rewrite a source file. Comment extraction is heuristic,
+            # and a rewrite applied to a misjudged string literal edits the
+            # program — the one failure --fix's contract cannot absorb.
+            if comment_syntax(path):
+                code_files += 1
+                continue
             with open(path, encoding="utf-8") as fh:
                 src = fh.read().splitlines(keepends=True)
             prose = dict(prose_lines([r.rstrip("\n") for r in src]))
@@ -636,7 +835,9 @@ def main():
                     open(path, "w", encoding="utf-8").write("".join(out))
         verb = "would apply" if args.dry_run else "applied"
         print(f"\n{verb} {total} safe rewrite(s)"
-              + (f"; skipped {len(records)} record doc(s)." if records else "."))
+              + (f"; skipped {len(records)} record doc(s)" if records else "")
+              + (f"; left {code_files} source file(s) untouched — comment "
+                 "findings are report-only" if code_files else "") + ".")
         print("Everything else needs a decision about what the surviving fact is "
               "— run without --fix to see it.")
         return 0
@@ -672,7 +873,8 @@ def main():
         json.dump({"findings": findings, "collisions": coll,
                    "files": file_stats, "clean_files": clean,
                    "safe_fixes": fixable,
-                   "skipped_records": records}, sys.stdout, indent=2)
+                   "skipped_records": records,
+                   "skipped_code_files": code_seen}, sys.stdout, indent=2)
         print()
     else:
         by_class = defaultdict(list)
@@ -711,6 +913,9 @@ def main():
             print(f"Skipped {len(records)} point-in-time record(s) — dated plans, "
                   "specs, ADRs, changelogs. Their history IS their content; pass "
                   "--include-records to scan them anyway.")
+        if code_seen:
+            print(f"Skipped {code_seen} code file(s) — pass --code to scan "
+                  "their comments.")
         print("Candidates, not verdicts — classes 0 and 0.5 first, they are the "
               "ones that come from iterating.")
 

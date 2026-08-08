@@ -36,9 +36,10 @@ against the surrounding paragraph rather than the line alone.
 ## What is a fixture
 
 `evals/fixtures/` is planted with metadiscourse deliberately, and CI depends
-on it staying that way: `repo-a/CLAUDE.md` is clean by construction and
-`repo-a/docs/` is dirty by construction, which is how the scanner's exit codes
-are pinned. Do not clean the fixtures.
+on it staying that way: `repo-a/CLAUDE.md` is clean by construction, and
+`repo-a/docs/` and the comments in `repo-a/src/` are dirty by construction,
+which is how the scanner's exit codes are pinned — including `--code`'s. Do
+not clean the fixtures.
 
 ## Before committing
 
