@@ -171,7 +171,7 @@ It is not a general prose linter. It does not scrub AI writing voice out of fres
 
 ## What is in here
 
-`skills/metadiscourse-audit/` is the skill: `SKILL.md` is the workflow your agent follows, and `references/classes.md` holds the full taxonomy — twelve classes, worked examples drawn from four unrelated repositories, the rewrite for each, and the five families of false positive that account for most of what you will discard. `scripts/scan.py` is the scanner. At the repo root, `.claude-plugin/` holds the plugin and marketplace manifests, and `evals/` carries task prompts with planted fixtures plus a trigger eval set for tuning the skill description.
+`skills/metadiscourse-audit/` is the skill: `SKILL.md` is the workflow your agent follows, and `references/classes.md` holds the full taxonomy — twelve classes, worked examples drawn from four unrelated repositories, the rewrite for each, and the six families of false positive that account for most of what you will discard. `scripts/scan.py` is the scanner. At the repo root, `.claude-plugin/` holds the plugin and marketplace manifests, and `evals/` carries task prompts with planted fixtures plus a trigger eval set for tuning the skill description.
 
 ## Licence
 

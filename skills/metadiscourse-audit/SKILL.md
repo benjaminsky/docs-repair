@@ -55,12 +55,20 @@ on. Real examples: a repo whose rules say "stated vs inferred is never
 blurred" needs its `[V]`/`[H]` evidence tags and its "Unverified against a
 real filing" markers. A repo that versions its rules needs the version
 identifiers, even while the prose *narrating what changed between versions* is
-pure class 0.
+pure class 0. When that narration is folded away, the identifier survives as
+one present-tense statement — "Current rule set: `X`" — not as a trail of
+stamps.
 
 Write down what you find as **protected**, and say so in the report. If a
 finding collides with a protected convention, it is Keep, and the report
 should name the convention that protects it. Getting this wrong is the main
 way this audit does damage.
+
+Genre is a convention too, and it doesn't need a rules file to exist. A
+tutorial or quickstart walks the reader by contract — "let's", "now that
+we've" are its voice, not cruft — so reader-address findings in
+tutorial-shaped files are Keep. The scanner already skips paths that look
+like one; apply the same judgement to files it can't recognise by name.
 
 ## Step 2 — events or projection, never both
 
@@ -98,27 +106,38 @@ explicitly historical. That is the author's call.
 
 ## Step 3 — scan
 
-Paths below are relative to this skill's own directory, so run them from here
-or prefix with the skill path.
+The script is `scripts/scan.py` inside this skill's directory; the corpus
+arguments (`docs`, `README.md`) resolve against your working directory.
+Easiest: run from the target project's root and call the script by its full
+skill path.
 
 ```bash
 python3 scripts/scan.py docs README.md --exclude drafts/
-python3 scripts/scan.py docs --class 0            # iteration artifacts only
+python3 scripts/scan.py docs --class 0            # iteration artifacts only (0a-0d)
 python3 scripts/scan.py docs --json               # machine-readable
 python3 scripts/scan.py docs --include-records    # override the exclusion
+python3 scripts/scan.py docs --class 0 --check    # CI gate: exit 1 on findings
 ```
 
 The scanner over-reports on purpose: a false positive costs one glance, a miss
 leaves an artifact in place for another year. Treat output as **candidates,
 not findings**. Expect to discard roughly a third — `references/classes.md`
-lists the five families that account for most of them, and reading that section
+lists the six families that account for most of them, and reading that section
 before triaging saves re-deriving them.
 
-It groups by class, and separately reports **collisions** — superlatives and
+It groups by class, and one line can honestly carry two — a dated stamp
+wrapped around a tracker claim is 0c *and* 0d. Triage such a pair as one
+finding. It separately reports **collisions** — superlatives and
 aphorisms repeated across files. That pass only works corpus-wide, and it is
 often the most useful single output: four documents each claiming to hold
 "the single most important thing" cancel each other out, and no individual
 file shows the problem.
+
+It ends with a **density table** — candidates per 100 lines, per file — and a
+`clean:` line naming the files with no candidates at all. Those are the
+report's "density per file" and "What is already clean" sections, precomputed:
+density says where revision has concentrated and the edit pass should start;
+the clean list is what a later rewrite must not regress.
 
 Read the surrounding paragraph for every candidate you keep. The scanner sees
 one line; whether a caveat interrupts the main line is a property of the
@@ -178,8 +197,10 @@ python3 scripts/scan.py docs --fix
 ```
 
 That is a deliberately narrow set — stripping a "worth …" wrapper from a list
-preamble, removing "it is worth noting that", dropping "Then" from "Then
-confirmed". Expect single digits on a large corpus, often zero.
+preamble, removing "it is worth noting that" and its relatives ("please note
+that", "as you can see" — though never "but note that", whose clause anchors
+a caveat to Move, not delete), dropping "Then" from "Then confirmed". Expect
+single digits on a large corpus, often zero.
 
 It is narrow because everything valuable here requires deciding **what the
 surviving fact is**, and that is not a regex's job. Counts are the instructive
@@ -200,7 +221,16 @@ do:
   useful thing to hand back to the author.
 - **Show the diff before applying** anything structural (moving a caveat to an
   appendix, collapsing a two-pass section). Those change what the document
-  *is*, not just how it reads.
+  *is*, not just how it reads. Running unattended on a task that asked for the
+  cleanup, apply it — and lead the report with those diffs, because they are
+  the ones a reviewer must see.
+- **Never invent a protected marker.** An evidence tag added during a rewrite
+  is a verification claim nobody made. Carry provenance in prose ("measured
+  with two independent extractors"). Where the project's rules require a tag
+  on every claim, an untagged rewrite breaks the convention too — give the
+  sentence the tag its evidence honestly supports, or hand the choice to the
+  author. The one forbidden move is stamping "verified" on something nobody
+  verified.
 
 If a whole file turns out to be an iteration artifact rather than a document
 containing them — an experiment log, a two-pass write-up — say so and stop.
@@ -240,18 +270,23 @@ that is explicitly a historical record.
 Two things that make the report usable rather than decorative:
 
 **Density per file** points at where revision has concentrated, which is where
-the next round of edits should go.
+the next round of edits should go. The scanner's density table is this,
+ready to carry over.
 
 **"What is already clean"** matters more than it looks. Tables, checklists and
 reference sections tend to be clean because there is nowhere to put a "worth
-noting" — naming them stops a later rewrite from prosifying them.
+noting" — naming them stops a later rewrite from prosifying them. Start from
+the scanner's `clean:` line, then add the sections that held up inside
+dirtier files.
 
 ## Scoping
 
 Audit a **doc set**, not a single file. The collision pass needs the corpus,
 and density comparisons are what identify the files worth editing. A
 single-file request is still worth widening: scan the set, report the file
-they asked about first.
+they asked about first. When the set turns out to *be* one file, say so and
+carry on — widening means the rest of that project's docs, never unrelated
+corpora that happen to sit nearby.
 
 If the corpus is large, do classes 0 and 0.5 across everything first and
 report those before starting the judgement pass. They are the findings most
