@@ -23,6 +23,10 @@ In Claude Code:
 /plugin install benjaminsky@benjaminsky-skills
 ```
 
+Cloud sessions have no `/plugin` prompt — there, the environment's setup
+script does the same job, covered under [Claude Code on the
+web](#claude-code-on-the-web).
+
 Then two prompts. The findings list first:
 
 > Audit `docs/` and `README.md` for metadiscourse. Give me the findings list —
@@ -34,10 +38,9 @@ Every finding comes back as `file:line`, the verbatim text, a class, a verdict
 > Apply the class 0 and 0.5 findings. Show me the diff for anything you move
 > rather than cut.
 
-The split is worth the extra turn. Classes 0 and 0.5 — iteration artifacts and
-misplaced caveats — have objective tests, so they are the findings you will
-almost always accept; everything below them is taste and deserves a look before
-it lands. And point it at a **doc set**, not one file: the collision pass and
+Classes 0 and 0.5 — iteration artifacts and misplaced caveats — have objective
+tests, so the first slice is the one you will almost always accept; everything
+below them is taste and deserves a look before it lands. And point it at a **doc set**, not one file: the collision pass and
 the density ranking only mean anything across a corpus, and they are the two
 outputs that tell you where to edit next.
 
