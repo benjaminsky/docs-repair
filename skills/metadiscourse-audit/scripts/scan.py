@@ -305,6 +305,21 @@ def _strip_phrase(pat, line):
         changed = True
 
 
+def count_safe_fixes(files):
+    """How many lines across *files* --fix would rewrite. Reported at the end
+    of a plain scan so the mechanical subset is discoverable from the output
+    itself, not just from --help."""
+    n = 0
+    for path in files:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+        for _, line in prose_lines(lines):
+            _, changes = apply_safe_fixes(line)
+            if changes:
+                n += 1
+    return n
+
+
 def apply_safe_fixes(line):
     """Return (new_line, [descriptions]) for the conservative rewrite set."""
     changes = []
@@ -651,10 +666,12 @@ def main():
     clean = [s["file"] for s in file_stats if not s["findings"]]
 
     coll = collisions(findings)
+    fixable = count_safe_fixes(files)
 
     if args.json:
         json.dump({"findings": findings, "collisions": coll,
                    "files": file_stats, "clean_files": clean,
+                   "safe_fixes": fixable,
                    "skipped_records": records}, sys.stdout, indent=2)
         print()
     else:
@@ -687,6 +704,9 @@ def main():
         else:
             print("\nclean: none — every scanned file has candidates")
         print(f"\n{len(findings)} candidate(s) across {len(files)} file(s).")
+        if fixable:
+            print(f"{fixable} of these are mechanical — --fix applies them, "
+                  "--fix --dry-run shows the rewrites first.")
         if records:
             print(f"Skipped {len(records)} point-in-time record(s) — dated plans, "
                   "specs, ADRs, changelogs. Their history IS their content; pass "
