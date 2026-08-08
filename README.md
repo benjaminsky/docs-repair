@@ -129,7 +129,7 @@ claude plugin marketplace add benjaminsky/metadiscourse-audit || true
 claude plugin install benjaminsky@benjaminsky-skills || true
 ```
 
-The `PATH` fallback is there because setup scripts run as root under a non-login shell, where `claude` is not otherwise found. It resolves through `command -v` first, so it does nothing on an image that already puts `claude` on the path, and the directory it falls back to carries no version in its name. The `|| true` matters more: a setup script that exits non-zero stops the session from starting at all, and a documentation skill is not worth a dead container.
+The `PATH` fallback is there because setup scripts run as root under a non-login shell, where `claude` is not otherwise found. It resolves through `command -v` first, so it does nothing on an image that already puts `claude` on the path, and the directory it falls back to carries no version in its name. The `|| true` matters more: a setup script that exits non-zero stops the session from starting at all.
 
 A setup script is skipped whenever a cached environment exists, so a new version arrives when the cache rebuilds rather than on your next session.
 
