@@ -106,17 +106,28 @@ explicitly historical. That is the author's call.
 
 ## Step 3 — scan
 
-The script is `scripts/scan.py` inside this skill's directory; the corpus
-arguments (`docs`, `README.md`) resolve against your working directory.
-Easiest: run from the target project's root and call the script by its full
-skill path.
+The script is `scripts/scan.py` inside this skill's directory. The two paths
+resolve against different roots and mixing them up is the usual first failure:
+the **script** must be addressed absolutely, because the skill is installed
+somewhere else entirely, while the **corpus** arguments (`docs`, `README.md`)
+resolve against your working directory. So stay in the target project's root
+and resolve the script path once:
 
 ```bash
-python3 scripts/scan.py docs README.md --exclude drafts/
-python3 scripts/scan.py docs --class 0            # iteration artifacts only (0a-0d)
-python3 scripts/scan.py docs --json               # machine-readable
-python3 scripts/scan.py docs --include-records    # override the exclusion
-python3 scripts/scan.py docs --class 0 --check    # CI gate: exit 1 on findings
+SCAN=/absolute/path/to/skills/metadiscourse-audit/scripts/scan.py
+```
+
+Take that path from wherever this `SKILL.md` was loaded from — under Claude
+Code as a plugin it is `"$CLAUDE_PLUGIN_ROOT/skills/metadiscourse-audit/scripts/scan.py"`;
+installed as a plain skill, `~/.claude/skills/metadiscourse-audit/scripts/scan.py`
+or the project's `.claude/skills/` copy. Then:
+
+```bash
+python3 "$SCAN" docs README.md --exclude drafts/
+python3 "$SCAN" docs --class 0            # iteration artifacts only (0a-0d)
+python3 "$SCAN" docs --json               # machine-readable
+python3 "$SCAN" docs --include-records    # override the exclusion
+python3 "$SCAN" docs --class 0 --check    # CI gate: exit 1 on findings
 ```
 
 The scanner over-reports on purpose: a false positive costs one glance, a miss
@@ -192,8 +203,8 @@ untouched since January, is the failure mode made visible.
 `--fix` applies **only rewrites whose removal cannot lose a fact**:
 
 ```bash
-python3 scripts/scan.py docs --fix --dry-run   # always look first
-python3 scripts/scan.py docs --fix
+python3 "$SCAN" docs --fix --dry-run   # always look first
+python3 "$SCAN" docs --fix
 ```
 
 That is a deliberately narrow set — stripping a "worth …" wrapper from a list
