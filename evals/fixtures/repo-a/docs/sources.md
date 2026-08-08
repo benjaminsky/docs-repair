@@ -9,4 +9,5 @@ An earlier version of this section said six of nine feeds needed OCR. That was
 measured wrong. The readability test counted form labels rather than extractable
 text. Re-checked with two independent extractors, five of those six read fine.
 
-The corrected yield is seven usable feeds from nine.
+The corrected yield is seven usable feeds from nine. Needless to say, the two
+feeds that still need OCR are the slowest to ingest.

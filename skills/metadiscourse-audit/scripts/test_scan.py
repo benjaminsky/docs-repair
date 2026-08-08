@@ -217,6 +217,23 @@ class TestSafeFixes(unittest.TestCase):
         self.check("Retries back off, and it is worth noting that the cap is 60s.",
                    "Retries back off, and the cap is 60s.")
 
+    def test_count_safe_fixes_skips_fences_and_counts_lines(self):
+        # Two fixable lines, one of them carrying two phrases (still one
+        # line), and the same phrase inside a code fence, which must not
+        # count — --fix would not touch it either.
+        text = ("Please note that the cache is an LRU.\n"
+                "\n"
+                "Needless to say, it is worth noting that retries back off.\n"
+                "\n"
+                "```\n"
+                "Please note that this is example output.\n"
+                "```\n")
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "doc.md")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(text)
+            self.assertEqual(scan.count_safe_fixes([path]), 2)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

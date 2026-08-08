@@ -211,7 +211,9 @@ That is a deliberately narrow set — stripping a "worth …" wrapper from a lis
 preamble, removing "it is worth noting that" and its relatives ("please note
 that", "as you can see" — though never "but note that", whose clause anchors
 a caveat to Move, not delete), dropping "Then" from "Then confirmed". Expect
-single digits on a large corpus, often zero.
+single digits on a large corpus, often zero — the plain scan's summary counts
+this set ("N of these are mechanical"), so the yield is known before running
+it.
 
 It is narrow because everything valuable here requires deciding **what the
 surviving fact is**, and that is not a regex's job. Counts are the instructive

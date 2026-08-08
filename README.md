@@ -2,40 +2,68 @@
 
 Metadiscourse Audit finds and removes the text in your documentation whose subject is the document, its author, or its reader, rather than the thing the document is actually about.
 
+```diff
+- An earlier draft of this doc said the timeout was 30s. It is 10s.
++ The timeout is 10s.
+```
+
+```diff
+- **Status 2026-04-02:** the batch job has not been made idempotent (issue #14).
++ Making the batch job idempotent is the obvious next change (issue #14).
+```
+
+Nobody writes this on purpose. It arrives through revision: a fact changes, and the new fact gets appended next to the old one instead of replacing it — so the document starts narrating how it reached its current state instead of just stating it. Every one of those appends was correct when it was written, which is why nobody catches them, and why the densest files in your repo are the ones you have edited most.
+
 ## Quickstart
 
-Give your agent the audit: [Claude Code](#claude-code), [any agent that reads AGENTS.md](#any-agent-that-reads-agentsmd), or [no agent at all](#no-agent-at-all).
+In Claude Code:
 
-Once it is installed, the run that works is two prompts rather than one. Ask
-for the inventory first:
+```
+/plugin marketplace add benjaminsky/metadiscourse-audit
+/plugin install benjaminsky@benjaminsky-skills
+```
+
+Then two prompts. The findings list first:
 
 > Audit `docs/` and `README.md` for metadiscourse. Give me the findings list —
 > don't edit anything yet.
 
-You get `file:line`, the verbatim text, a class, a verdict and a rewrite for
-each. Then approve a slice of it:
+Every finding comes back as `file:line`, the verbatim text, a class, a verdict
+— cut, fold, move, or keep — and the rewrite. Then approve a slice:
 
 > Apply the class 0 and 0.5 findings. Show me the diff for anything you move
 > rather than cut.
 
-Splitting it this way is worth the extra turn: class 0 and 0.5 are the two
-classes with objective tests, so they arrive fastest and are the ones you will
-almost always accept, while the staging classes below them are taste and
-deserve a look before they land. Point it at a **doc set**, not one file — the
-collision pass and the density ranking only mean anything across a corpus, and
-both are the outputs that tell you where to edit next.
+The split is worth the extra turn. Classes 0 and 0.5 — iteration artifacts and
+misplaced caveats — have objective tests, so they are the findings you will
+almost always accept; everything below them is taste and deserves a look before
+it lands. And point it at a **doc set**, not one file: the collision pass and
+the density ranking only mean anything across a corpus, and they are the two
+outputs that tell you where to edit next.
+
+No agent, no install — the scanner is a single dependency-free Python file.
+From your project's root:
+
+```bash
+git clone https://github.com/benjaminsky/metadiscourse-audit /tmp/mda
+python3 /tmp/mda/skills/metadiscourse-audit/scripts/scan.py docs README.md
+```
+
+That prints the candidates by `file:line`, and its last lines tell you how many
+`--fix` can rewrite mechanically. Other routes — [any agent that reads
+AGENTS.md](#any-agent-that-reads-agentsmd), [a plain skill with no plugin
+machinery](#claude-code), [CI](#no-agent-at-all) — are under
+[Installation](#installation).
 
 ## How it works
-
-Most metadiscourse is not a drafting problem. It arrives through revision. A fact changes, and the new fact gets appended next to the old one instead of replacing it — so the document starts narrating how it reached its current state instead of just stating it. Every one of those appends was correct when it was written, which is why nobody catches them, and why the densest files in your repo are the ones you have edited most.
 
 The audit starts by reading your project's own rules — `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `.cursorrules`, a style guide, whatever you use. Projects encode conventions that *require* this kind of text, and stripping them is the main way an audit like this does damage. Whatever it finds there is protected for the rest of the run.
 
 Then it separates your records from your standing documents. A document is either the events or a projection of them, never both. A dated plan, spec, ADR or changelog is an event: written once, read as of its date, and its "previously / now" language is its content. Those are left alone. A README or a runbook is a projection of those events onto now, and that is what gets audited.
 
-Only then does it scan. You get a list of findings, each with a `file:line`, the text itself, a class, a verdict — cut, fold, move, or keep — and a concrete rewrite. Ask for the list first if you want to approve before anything changes, or let it apply the edits.
+Only then does it scan. The findings are the inventory the Quickstart's two prompts drive, and the scan's own summary counts how many of them `--fix` can rewrite mechanically — everything else needs a human to decide what the surviving fact is.
 
-Two rules shape the verdicts. Caveats are never cut, only moved: a risk or a hedge is content, and the failure is that it interrupts the sentence you came for instead of sitting in a footnote. And a superlative is information exactly once — when four documents each claim to hold the single most important thing, they cancel.
+Three rules shape the verdicts. Caveats are never cut, only moved: a risk or a hedge is content, and the failure is that it interrupts the sentence you came for instead of sitting in a footnote. Cross-references stay while the status claims around them go — in the second example above, `(issue #14)` never rots, and "has not been made" is the part only the tracker knows. And a superlative is information exactly once — when four documents each claim to hold the single most important thing, they cancel.
 
 ## What it finds
 
@@ -44,11 +72,6 @@ A document arguing with its own history:
 ```diff
 - _Changed in `rules/2026-04-b`: state X was previously inferred from a passed
 - date; it now requires a recorded event._
-```
-
-```diff
-- An earlier draft of this doc said the timeout was 30s. It is 10s.
-+ The timeout is 10s.
 ```
 
 ```diff
@@ -63,15 +86,6 @@ A deleted behaviour that mattered to whoever upgraded, and to nobody since:
 - auto-created on first request).
 + Migrations are the source of truth for the schema.
 ```
-
-A date stamped into a paragraph, promising an update that never comes:
-
-```diff
-- **Status 2026-04-02:** the batch job has not been made idempotent (issue #14).
-+ Making the batch job idempotent is the obvious next change (issue #14).
-```
-
-The cross-reference stays. Only the claim about its state goes, because that is the part the tracker already knows and the paragraph does not.
 
 A caveat wedged into the sentence it qualifies:
 
@@ -117,14 +131,7 @@ And the one that only shows up across a whole doc set: four different files each
 
 ### Claude Code
 
-Add the marketplace, then install the plugin:
-
-```
-/plugin marketplace add benjaminsky/metadiscourse-audit
-/plugin install benjaminsky@benjaminsky-skills
-```
-
-That gives you `/benjaminsky:metadiscourse-audit`, and Claude will reach for it on its own when you describe the problem. Update later with `/plugin marketplace update benjaminsky-skills`.
+The two `/plugin` commands in the [Quickstart](#quickstart) are the whole install. They give you `/benjaminsky:metadiscourse-audit`, and Claude will reach for it on its own when you describe the problem. Update later with `/plugin marketplace update benjaminsky-skills`.
 
 If you would rather keep it as a plain skill with no plugin machinery, clone it into your skills directory instead:
 
@@ -197,7 +204,7 @@ pointing this at your own docs. From the root of your clone:
 
 ```bash
 cd evals/fixtures/repo-a
-python3 ../../../skills/metadiscourse-audit/scripts/scan.py docs CLAUDE.md
+python3 "$SCAN" docs CLAUDE.md
 ```
 
 The head of the output is the two classes with objective tests:
@@ -210,7 +217,7 @@ docs/sources.md:8  [prior-state reference]
     An earlier version of this section said six of nine feeds needed OCR. That was
 
 === class 0c — 1 candidate(s) ===
-docs/ingest.md:19  [dated status stamp]
+docs/ingest.md:21  [dated status stamp]
     **Status 2026-05-02:** the batch job has not been made idempotent (issue #14).
 ```
 
@@ -220,34 +227,38 @@ The tail is the part that only works corpus-wide:
 collisions: none — no superlative or aphorism repeats across files
 
 === density — candidates per 100 lines ===
-    64.0  docs/ingest.md  (16 in 25 lines)
-    41.7  docs/sources.md  (5 in 12 lines)
+    63.0  docs/ingest.md  (17 in 27 lines)
+    38.5  docs/sources.md  (5 in 13 lines)
 
 clean: CLAUDE.md
 
-21 candidate(s) across 3 file(s).
+22 candidate(s) across 3 file(s).
+2 of these are mechanical — --fix applies them, --fix --dry-run shows the rewrites first.
 Skipped 1 point-in-time record(s) — dated plans, specs, ADRs, changelogs.
 ```
 
 Density says where to start editing. `clean:` is what a later rewrite must not
 regress. The skipped record is the ADR, left alone by design.
 
-`--fix` on that fixture reports zero, which is the honest answer: every finding
-in it needs someone to decide what the surviving fact is. It earns its keep on
-plainer filler:
+Those two mechanical candidates are what `--fix` exists for:
 
 ```
 $ python3 "$SCAN" docs --fix --dry-run
-docs/guide.md
-  3: - It is worth noting that the parser accepts CSV and XLSX.
-  3: + The parser accepts CSV and XLSX.
-  5: - Two priors worth defending explicitly:
-  5: + Two priors:
-  10: - Please note that the cache is LRU.
-  10: + The cache is LRU.
 
-would apply 3 safe rewrite(s).
+docs/ingest.md
+  12: - It is worth noting that the reader normalises line endings before the sniff.
+  12: + The reader normalises line endings before the sniff.
+
+docs/sources.md
+  12: - The corrected yield is seven usable feeds from nine. Needless to say, the two
+  12: + The corrected yield is seven usable feeds from nine. The two
+
+would apply 2 safe rewrite(s); skipped 1 record doc(s).
+Everything else needs a decision about what the surviving fact is — run without --fix to see it.
 ```
+
+The other twenty findings stay in human hands, and that last line is the reason:
+deciding what the surviving fact is cannot be a regex's job.
 
 ## What it will not do
 
