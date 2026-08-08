@@ -9,6 +9,8 @@ _Corrected in `ingest/2026-04-c`: `2026-04-b` dropped the quote-escape branch on
 the claim that no file uses it. Some do. It is back, and the reader now handles
 doubled quotes._
 
+It is worth noting that the reader normalises line endings before the sniff.
+
 Three things the reader must get right:
 
 1. **The header is not row 0.** Files carry a title block above it.

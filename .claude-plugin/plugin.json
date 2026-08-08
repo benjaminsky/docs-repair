@@ -1,7 +1,7 @@
 {
   "name": "benjaminsky",
   "description": "benjaminsky's skills. Currently: metadiscourse-audit \u2014 find and remove text whose subject is the document, its author or its reader rather than the thing it documents.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "benjaminsky"
   },

@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: tests (python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run unit tests
+        working-directory: skills/metadiscourse-audit/scripts
+        run: python3 test_scan.py
+
+  scanner:
+    name: scanner exit codes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # --check is what a caller wires into their own CI, so both directions of
+      # it are worth holding still. The eval fixtures are planted: repo-a's
+      # CLAUDE.md is clean by construction, its docs/ are dirty by construction.
+      - name: A clean file exits 0
+        run: python3 skills/metadiscourse-audit/scripts/scan.py --check evals/fixtures/repo-a/CLAUDE.md
+
+      - name: A file with candidates exits 1
+        run: |
+          if python3 skills/metadiscourse-audit/scripts/scan.py --check \
+              evals/fixtures/repo-a/docs/ingest.md; then
+            echo "::error::--check exited 0 on a fixture planted with candidates"
+            exit 1
+          fi
+
+      - name: Scanning nothing exits 2
+        run: |
+          set +e
+          python3 skills/metadiscourse-audit/scripts/scan.py .github/workflows
+          status=$?
+          set -e
+          if [ "$status" -ne 2 ]; then
+            echo "::error::expected exit 2 when no standing markdown is found, got $status"
+            exit 1
+          fi
+
+  manifests:
+    name: plugin manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # A malformed manifest does not break a clone, it breaks every install
+      # from the marketplace, and nothing else here would notice.
+      - name: Validate plugin.json and marketplace.json
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+
+          fail = []
+
+          with open(".claude-plugin/plugin.json", encoding="utf-8") as fh:
+              plugin = json.load(fh)
+          for key in ("name", "description", "version"):
+              if not plugin.get(key):
+                  fail.append(f"plugin.json is missing {key}")
+
+          with open(".claude-plugin/marketplace.json", encoding="utf-8") as fh:
+              market = json.load(fh)
+          for key in ("name", "owner", "plugins"):
+              if not market.get(key):
+                  fail.append(f"marketplace.json is missing {key}")
+
+          entries = market.get("plugins") or []
+          if not entries:
+              fail.append("marketplace.json lists no plugins")
+
+          for entry in entries:
+              name = entry.get("name", "<unnamed>")
+              source = entry.get("source")
+              if not source:
+                  fail.append(f"{name}: no source")
+                  continue
+              if isinstance(source, str) and source.startswith("."):
+                  if not os.path.isdir(source):
+                      fail.append(f"{name}: source {source} does not exist")
+                  elif source in ("./", ".") and entry["name"] != plugin["name"]:
+                      # A self-sourced entry installs this repo's own plugin.json,
+                      # so the two names have to agree or the install resolves to
+                      # a plugin the catalogue never advertised.
+                      fail.append(
+                          f"{name}: marketplace name does not match plugin.json "
+                          f"name {plugin['name']!r}"
+                      )
+              if entry.get("version") and entry["version"] != plugin.get("version"):
+                  fail.append(
+                      f"{name}: marketplace version {entry['version']} does not "
+                      f"match plugin.json version {plugin.get('version')}"
+                  )
+
+          for problem in fail:
+              print(f"::error::{problem}")
+          sys.exit(1 if fail else 0)
+          PY
+
+      # SKILL.md carries the frontmatter that decides whether the skill is ever
+      # reached, so its absence should fail loudly rather than install quietly.
+      - name: Skill has frontmatter with a description
+        run: |
+          python3 - <<'PY'
+          import sys
+
+          path = "skills/metadiscourse-audit/SKILL.md"
+          with open(path, encoding="utf-8") as fh:
+              text = fh.read()
+
+          if not text.startswith("---\n"):
+              print(f"::error::{path} has no YAML frontmatter")
+              sys.exit(1)
+
+          end = text.find("\n---", 4)
+          if end == -1:
+              print(f"::error::{path} frontmatter is not closed")
+              sys.exit(1)
+
+          front = text[4:end]
+          if "description:" not in front:
+              print(f"::error::{path} frontmatter has no description")
+              sys.exit(1)
+          PY
