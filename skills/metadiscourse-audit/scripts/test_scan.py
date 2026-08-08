@@ -130,7 +130,37 @@ class TestSuppressors(unittest.TestCase):
         self.assertNotIn("3", classes_of(found))
 
 
+class TestWrapAndDedupe(unittest.TestCase):
+    def test_phrase_wrapped_across_lines_is_found(self):
+        # "the / least defensible" straddles a soft wrap; both baseline eval
+        # agents caught this surviving the per-line pass.
+        found = scan_text("The backoff table is the\n"
+                          "least defensible thing here.\n")
+        hits = [f for f in found if f["class"] == "6"]
+        self.assertEqual(1, len(hits))
+        self.assertEqual(1, hits[0]["line"])
+
+    def test_wrap_join_stops_at_block_boundaries(self):
+        found = scan_text("The backoff table is the\n"
+                          "- least defensible thing here\n")
+        self.assertNotIn("6", classes_of(found))
+
+    def test_one_finding_per_class_per_line(self):
+        # Both class-4 patterns match this line; the report should count one.
+        found = scan_text("Three things the reader must get right:\n")
+        self.assertEqual(1, sum(1 for f in found if f["class"] == "4"))
+
+    def test_wrap_pass_defers_to_per_line_findings(self):
+        found = scan_text("and it should be\n"
+                          "revisited once real traffic exists.\n")
+        self.assertEqual(1, sum(1 for f in found if f["class"] == "0.5"))
+
+
 class TestNewPatterns(unittest.TestCase):
+    def test_corrected_residue(self):
+        found = scan_text("The corrected yield is seven usable feeds from nine.\n")
+        self.assertIn("0a", classes_of(found))
+
     def test_currently_is_an_undated_stamp(self):
         found = scan_text("The exporter currently supports CSV only.\n")
         self.assertIn("0c", classes_of(found))

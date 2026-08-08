@@ -62,7 +62,8 @@ PATTERNS = [
     ("0a", "self-correction", re.compile(
         r"\b(was wrong|were wrong|got wrong|measured wrong|misread|mistakenly"
         r"|wrongly|superseded|revised|half right|overturn(?:ed|s)?"
-        r"|turned out (?:to be )?wrong|corrected (?:above|below|this|that))\b", re.I)),
+        r"|turned out (?:to be )?wrong|corrected (?:above|below|this|that)"
+        r"|the corrected \w+)\b", re.I)),
     ("0a", "pass/round marker", re.compile(
         r"\b((?:first|second|third|initial|original|search-only|earlier) pass"
         r"|both passes|rounds? (?:one|two|1|2))\b", re.I)),
@@ -373,6 +374,24 @@ def prose_lines(lines):
         yield n, line
 
 
+# A line that opens a new block — the soft-wrap join below must not glue a
+# paragraph's last line onto the heading, bullet or table row that follows it.
+BLOCK_START = re.compile(r"^\s*(#{1,6}\s|\||[-*+]\s|\d+[.)]\s|>)")
+
+
+def _suppressed(label, m, text, path):
+    sup = SUPPRESS.get(label)
+    if sup:
+        if label in POSITIONAL_SUPPRESS:
+            if any(s.start() < m.end() and m.start() < s.end()
+                   for s in sup.finditer(text)):
+                return True
+        elif sup.search(text):
+            return True
+    psup = PATH_SUPPRESS.get(label)
+    return bool(psup and psup.search(path))
+
+
 def scan_file(path):
     """Return (findings, line_count) for one markdown file."""
     try:
@@ -383,7 +402,21 @@ def scan_file(path):
         return [], 0
 
     findings = []
-    for n, line in prose_lines(lines):
+    # One finding per class per line: a line hit by two sibling patterns is
+    # still one line to read, and double-counting inflates the totals the
+    # report is built on.
+    seen = set()
+
+    def add(n, cls, label, match_text, shown_text):
+        if (n, cls) in seen:
+            return
+        seen.add((n, cls))
+        findings.append({"file": path, "line": n, "class": cls,
+                         "label": label, "match": match_text,
+                         "text": shown_text})
+
+    prose = list(prose_lines(lines))
+    for n, line in prose:
         plain = plain_text(line)
         table_row = line.lstrip().startswith("|")
         heading = line.lstrip().startswith("#")
@@ -393,28 +426,35 @@ def scan_file(path):
             m = pat.search(plain)
             if not m:
                 continue
-            sup = SUPPRESS.get(label)
-            if sup:
-                if label in POSITIONAL_SUPPRESS:
-                    if any(s.start() < m.end() and m.start() < s.end()
-                           for s in sup.finditer(plain)):
-                        continue
-                elif sup.search(plain):
-                    continue
-            psup = PATH_SUPPRESS.get(label)
-            if psup and psup.search(path):
+            if _suppressed(label, m, plain, path):
                 continue
             # A caveat inside a table cell is usually a tag, not a clause.
             if table_row and cls == "0.5" and len(line) > 200:
                 continue
-            findings.append({
-                "file": path,
-                "line": n,
-                "class": cls,
-                "label": label,
-                "match": m.group(0).strip(),
-                "text": line.strip(),
-            })
+            add(n, cls, label, m.group(0).strip(), line.strip())
+
+    # Soft wraps split phrases across lines — "the backoff table is the /
+    # least defensible thing here" hides "the least defensible" from every
+    # per-line pattern. Join each adjacent pair inside a paragraph and keep
+    # only the matches that span the boundary: anything else the per-line
+    # pass already saw.
+    for (na, a), (nb, b) in zip(prose, prose[1:]):
+        if nb != na + 1:
+            continue
+        if a.lstrip().startswith(("#", "|")) or BLOCK_START.match(b):
+            continue
+        pa = plain_text(a)
+        cut = len(pa)
+        joined = pa + " " + plain_text(b)
+        for cls, label, pat in PATTERNS:
+            if (na, cls) in seen or (nb, cls) in seen:
+                continue
+            m = next((mm for mm in pat.finditer(joined)
+                      if mm.start() < cut < mm.end()), None)
+            if m is None or _suppressed(label, m, joined, path):
+                continue
+            add(na, cls, label, m.group(0).strip(),
+                a.strip() + " " + b.strip())
     return findings, len(lines)
 
 
@@ -634,6 +674,9 @@ def main():
             print(f"\n=== collisions — {len(coll)} phrase(s) repeated across files ===")
             for c in coll:
                 print(f"  {c['phrase']!r} ×{c['count']}: {', '.join(c['sites'])}")
+        else:
+            print("\ncollisions: none — no superlative or aphorism repeats "
+                  "across files")
         if dense:
             print("\n=== density — candidates per 100 lines ===")
             for s in dense:

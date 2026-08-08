@@ -302,6 +302,11 @@ gestures stand between them and the fact they came for.
 Telling the reader how many items are coming. Cheap to write, and it
 forecloses editing: the count is maintained in two places and drifts.
 
+The tiebreaker for the hard cases: a count in the preamble of a visible list
+restates what the reader is about to see; a count inside a claim ("two
+*independent* defences") is the claim. Either verdict on a preamble count is
+defensible — what is not defensible is dropping a count that argues.
+
 > Two further caveats worth carrying into any interpretation: → **Cut** → "Caveats:"
 > Two things follow from this table and are already enforced in the code: → **Fold**; keep "enforced in the code".
 > Five gaps, ordered by how defensible they look. → **Fold**; keep the ordering key, drop the count.

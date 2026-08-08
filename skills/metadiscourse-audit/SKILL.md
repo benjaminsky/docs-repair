@@ -104,8 +104,10 @@ explicitly historical. That is the author's call.
 
 ## Step 3 — scan
 
-Paths below are relative to this skill's own directory, so run them from here
-or prefix with the skill path.
+The script is `scripts/scan.py` inside this skill's directory; the corpus
+arguments (`docs`, `README.md`) resolve against your working directory.
+Easiest: run from the target project's root and call the script by its full
+skill path.
 
 ```bash
 python3 scripts/scan.py docs README.md --exclude drafts/
@@ -214,7 +216,13 @@ do:
   useful thing to hand back to the author.
 - **Show the diff before applying** anything structural (moving a caveat to an
   appendix, collapsing a two-pass section). Those change what the document
-  *is*, not just how it reads.
+  *is*, not just how it reads. Running unattended on a task that asked for the
+  cleanup, apply it — and lead the report with those diffs, because they are
+  the ones a reviewer must see.
+- **Never invent a protected marker.** An evidence tag added during a rewrite
+  is a verification claim nobody made. Carry provenance in prose ("measured
+  with two independent extractors") unless the project's convention already
+  covers the sentence.
 
 If a whole file turns out to be an iteration artifact rather than a document
 containing them — an experiment log, a two-pass write-up — say so and stop.
