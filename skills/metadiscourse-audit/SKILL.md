@@ -55,7 +55,9 @@ on. Real examples: a repo whose rules say "stated vs inferred is never
 blurred" needs its `[V]`/`[H]` evidence tags and its "Unverified against a
 real filing" markers. A repo that versions its rules needs the version
 identifiers, even while the prose *narrating what changed between versions* is
-pure class 0.
+pure class 0. When that narration is folded away, the identifier survives as
+one present-tense statement — "Current rule set: `X`" — not as a trail of
+stamps.
 
 Write down what you find as **protected**, and say so in the report. If a
 finding collides with a protected convention, it is Keep, and the report
@@ -196,8 +198,9 @@ python3 scripts/scan.py docs --fix
 
 That is a deliberately narrow set — stripping a "worth …" wrapper from a list
 preamble, removing "it is worth noting that" and its relatives ("please note
-that", "as you can see"), dropping "Then" from "Then confirmed". Expect single
-digits on a large corpus, often zero.
+that", "as you can see" — though never "but note that", whose clause anchors
+a caveat to Move, not delete), dropping "Then" from "Then confirmed". Expect
+single digits on a large corpus, often zero.
 
 It is narrow because everything valuable here requires deciding **what the
 surviving fact is**, and that is not a regex's job. Counts are the instructive
@@ -223,8 +226,11 @@ do:
   the ones a reviewer must see.
 - **Never invent a protected marker.** An evidence tag added during a rewrite
   is a verification claim nobody made. Carry provenance in prose ("measured
-  with two independent extractors") unless the project's convention already
-  covers the sentence.
+  with two independent extractors"). Where the project's rules require a tag
+  on every claim, an untagged rewrite breaks the convention too — give the
+  sentence the tag its evidence honestly supports, or hand the choice to the
+  author. The one forbidden move is stamping "verified" on something nobody
+  verified.
 
 If a whole file turns out to be an iteration artifact rather than a document
 containing them — an experiment log, a two-pass write-up — say so and stop.
