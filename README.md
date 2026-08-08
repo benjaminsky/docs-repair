@@ -116,6 +116,36 @@ cd metadiscourse-audit && ./install.sh
 
 That installs to `~/.claude/skills/metadiscourse-audit`. Pass `--project` to install into the current repo instead, `--link` to symlink so `git pull` updates it in place, or `--uninstall` to remove it. It will not overwrite a directory it did not create.
 
+### Claude Code on the web
+
+`/plugin` is a terminal command, so cloud sessions cannot install anything interactively, and `~/.claude` does not carry over from your machine. Install from the environment's setup script instead. One environment covers every cloud session you start from it — the web, `claude --cloud`, the mobile and desktop apps, and routines — across all your repositories.
+
+Open the environment settings at [claude.ai/code](https://claude.ai/code) and put this in **Setup script**:
+
+```bash
+#!/bin/bash
+export PATH="$PATH:/opt/node22/bin"
+claude plugin marketplace add benjaminsky/metadiscourse-audit || true
+claude plugin install benjaminsky@benjaminsky-skills || true
+```
+
+The `PATH` line is there because setup scripts run as root under a non-login shell, where the `claude` binary is not otherwise found. The `|| true` matters more: a setup script that exits non-zero stops the session from starting at all, and a documentation skill is not worth a dead container.
+
+A setup script is skipped whenever a cached environment exists, so a new version arrives when the cache rebuilds rather than on your next session.
+
+To scope the skill to one repository rather than every cloud session, commit the same two keys to that repository's `.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "benjaminsky-skills": {
+      "source": { "source": "github", "repo": "benjaminsky/metadiscourse-audit" }
+    }
+  },
+  "enabledPlugins": { "benjaminsky@benjaminsky-skills": true }
+}
+```
+
 ### Any agent that reads AGENTS.md
 
 `AGENTS.md` is the portable route — Codex, Cursor, Copilot, Gemini CLI, Aider, Windsurf and Zed all read it. Clone the repository somewhere your agent can see, then point at the skill from your `AGENTS.md`:
