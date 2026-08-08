@@ -59,12 +59,19 @@ def plain_text(line):
 PATTERNS = [
     # --- Class 0: iteration artifacts ---------------------------------------
     ("0a", "prior-state reference", re.compile(
-        r"\b(previously|formerly|used to (?:be|require|assume|say|live|return"
-        r"|default|mean|work|take|have)\b|an earlier (?:version|note|draft|section)"
+        r"\b(previously|formerly|an earlier (?:version|note|draft|section)"
         r"|the (?:previous|old) (?:version|revision|draft|behaviou?r|implementation)"
         r"|the original (?:table|version|note|plan)|first version|initial version"
         r"|we (?:had|thought|concluded|assumed)|no longer|has since|since then"
         r"|what we had)\b", re.I)),
+    # "used to <verb>" gets its own entry because it needs its own suppressor.
+    # The verb slot is open: a fixed list ("be|require|assume|say|live|…") was
+    # measured against every "used to" in a 25k-line TypeScript corpus and
+    # caught 4 of 17 real artifacts — it missed "used to ride", "used to keep",
+    # "used to sit", "used to seed", "used to escape". Enumerating the verbs a
+    # writer might reach for is the losing side of this; the purpose sense
+    # below is the thing worth naming.
+    ("0a", "past-habitual 'used to'", re.compile(r"\bused to \w+", re.I)),
     ("0a", "self-correction", re.compile(
         r"\b(was wrong|were wrong|got wrong|measured wrong|misread|mistakenly"
         r"|wrongly|superseded|revised|half right|overturn(?:ed|s)?"
@@ -144,9 +151,13 @@ PATTERNS = [
         r"|how to read this|the point of writing|for the record"
         r"|a note on\b|notes on\b)", re.I)),
     ("2", "navigation", re.compile(
+        # "read … first" is an instruction to the reader; "a mortgage read as
+        # first-year spending" is a sentence about mortgages. The two guards
+        # are what separate them: an ordinal-as-adjective takes a hyphen, and
+        # "read as" is describing, not directing.
         r"\b(see (?:§|section|above|below)|as (?:noted|mentioned|discussed|described)"
         r" (?:above|below|earlier)|the (?:table|section|list|point) (?:above|below)"
-        r"|stop reading|read .{0,20}first)\b", re.I)),
+        r"|stop reading|read (?!as\b).{0,20}first(?![-\w]))\b", re.I)),
     ("3", "walking the reader", re.compile(
         # The writer narrating the reading experience instead of stating the
         # next fact. "Let's say / assume / define" survives: that is the
@@ -170,7 +181,10 @@ PATTERNS = [
         r"\b(Two|Three|Four|Five|Six|Seven) (things|further|more|hard|key|reasons"
         r"|consequences|caveats|rules|priors|gaps|ways|independent|separate)\b")),
     ("5", "'worth X' attitude marker", re.compile(
-        r"\bworth (a\b|the\b|it\b|\d|noting|knowing|remembering|mentioning"
+        # "(?<!net )" because "net worth the plan opens with" is a balance
+        # sheet, not an attitude. Any financial corpus trips this on every
+        # mention of the domain's central quantity.
+        r"(?<!net )\bworth (a\b|the\b|it\b|\d|noting|knowing|remembering|mentioning"
         r"|recording|carrying|defending|deciding|re-?checking|a glance)", re.I)),
     ("6", "salience superlative", re.compile(
         # "(?!recent)" because "the most recent snapshot" selects among live
@@ -236,13 +250,36 @@ SUPPRESS = {
     # "the most recent snapshot wins" selects among live data; it does not
     # date the prose.
     "recency marker": re.compile(r"\bmost recent(?:ly)?\b", re.I),
+    # "used to" has a second sense that dominates code comments: the reduced
+    # relative clause, "a key [that is] used to share the SDK" — employed in
+    # order to, not did-so-formerly. It hangs off an appositive (comma, dash,
+    # paren) or a for-/of-headed noun phrase, which is what this matches.
+    #
+    # A sentence boundary is the other tell, and this one is categorical: the
+    # habitual sense needs a subject ("the catalog used to seed"), so it can
+    # never open a sentence, while the purpose sense does it freely — "…1.6% of
+    # the car's value per month. Used to derive a lease payment."
+    #
+    # Measured against every "used to" in a 25k-line TypeScript corpus: 17
+    # past-habitual, 9 purpose. Open verb slot alone fires on all 26; with this
+    # suppressor it keeps 17/17 real and drops 7 of the 9. The survivors are
+    # bare noun-phrase definitions ("Static module metadata used to build
+    # params") that no rule separated from "The catalog used to seed" without
+    # losing real ones — two glances against thirteen artifacts the fixed verb
+    # list was missing.
+    #
+    # A line-initial "used to" is NOT a sentence opener, it is a soft wrap with
+    # its subject on the line above, so the boundary branch requires the stop.
+    "past-habitual 'used to'": re.compile(
+        r"(?:[,(]\s*|[—–-]\s*|\.\s+|\b(?:for|of)\b[^.;]{0,30})used to \w+", re.I),
 }
 
 # Labels whose suppressor must overlap the finding itself, not merely appear
 # somewhere on the line. "X has been added back. Once Y has been uploaded, ..."
 # holds a real changelog and a runtime condition in one line; suppressing by
-# line would let the condition shield the changelog.
-POSITIONAL_SUPPRESS = {"perfect-tense changelog"}
+# line would let the condition shield the changelog. A line carrying both
+# senses of "used to" is the same hazard.
+POSITIONAL_SUPPRESS = {"perfect-tense changelog", "past-habitual 'used to'"}
 
 # Path-level suppressors: some classes are genre, not cruft. A tutorial walks
 # the reader by contract — flagging every "let's" in a quickstart would report

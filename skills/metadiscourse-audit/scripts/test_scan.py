@@ -183,6 +183,72 @@ class TestNewPatterns(unittest.TestCase):
         self.assertIn("6", classes_of(found))
 
 
+class TestUsedTo(unittest.TestCase):
+    """Both senses of "used to", every case lifted from a real corpus."""
+
+    def test_open_verb_slot_catches_what_a_fixed_list_missed(self):
+        for line in ("# This entry used to ride on the module's schema default\n",
+                     "# This file used to keep a parallel name->category map\n",
+                     "# the NUL that used to sit here\n",
+                     "# The catalog used to seed defaults into a new entry\n",
+                     "# That throw used to escape and crash the worker\n"):
+            with self.subTest(line=line):
+                self.assertIn("0a", classes_of(scan_text(line, name="mod.py")))
+
+    def test_purpose_participle_is_not_a_changelog(self):
+        # "employed in order to", not "did so formerly".
+        for line in ("# Running cost basis of the account, used to record the gain\n",
+                     "# Index for the expected rate used to set the principal limit\n",
+                     "# import (used to load compiled modules) is unaffected\n",
+                     "# Stable identity for a target - used to match and dedup rows\n",
+                     "# Single source of truth for the key used to share the SDK\n"):
+            with self.subTest(line=line):
+                self.assertNotIn("0a", classes_of(scan_text(line, name="mod.py")))
+
+    def test_sentence_initial_used_to_is_the_purpose_sense(self):
+        # The habitual sense needs a subject, so it cannot open a sentence.
+        found = scan_text("# Nets to ~1.6% of the car's value per month. Used "
+                          "to derive a lease payment.\n", name="mod.py")
+        self.assertNotIn("0a", classes_of(found))
+
+    def test_line_initial_used_to_is_a_soft_wrap_not_a_sentence(self):
+        # The subject sits on the line above; suppressing this would lose it.
+        found = scan_text("# This file\n# used to keep a parallel map\n",
+                          name="mod.py")
+        self.assertIn("0a", classes_of(found))
+
+    def test_purpose_sense_does_not_shield_a_real_one_on_the_same_line(self):
+        found = scan_text("# This entry used to ride on the default. The key "
+                          "used to share the SDK is unaffected.\n", name="mod.py")
+        self.assertIn("0a", classes_of(found))
+
+    def test_the_classic_shape_still_fires(self):
+        found = scan_text("The delimiter used to be assumed to be a comma.\n")
+        self.assertIn("0a", classes_of(found))
+
+
+class TestDomainCollisions(unittest.TestCase):
+    """Domain vocabulary that collided with the patterns on a real repo."""
+
+    def test_net_worth_is_a_balance_not_an_attitude(self):
+        found = scan_text("/** Net worth the plan opens with - cash + property. */\n",
+                          name="mod.ts")
+        self.assertNotIn("5", classes_of(found))
+
+    def test_worth_the_attitude_marker_still_fires(self):
+        found = scan_text("Worth the detour: check the milestone columns.\n")
+        self.assertIn("5", classes_of(found))
+
+    def test_read_as_first_year_is_not_navigation(self):
+        found = scan_text("# a mortgage read as first-year spending\n",
+                          name="mod.py")
+        self.assertNotIn("2", classes_of(found))
+
+    def test_read_this_first_is_navigation(self):
+        found = scan_text("Read the schema notes first.\n")
+        self.assertIn("2", classes_of(found))
+
+
 class TestCodeComments(unittest.TestCase):
     def test_hash_comment_is_scanned(self):
         found = scan_text("RETRIES = 3  # previously the default was five\n",

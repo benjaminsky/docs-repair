@@ -454,6 +454,37 @@ happened once, off-stage, to the code. The test: swap "has been" for "is".
 branch is added back" loses its only content, which was that something
 changed. The scanner suppresses the conditional form and flags the bare one.
 
+### "explicitly" as a mode of action, not a disclosure of intent
+
+> Supplying authorization/token/userinfo **explicitly** makes @auth/core skip
+> discovery entirely.
+
+> Default to today's dollars; only nominal when **explicitly** stored as `'0'`.
+
+> the yearly-series presets stay read-only until you **explicitly** override
+> them with a single flat value.
+
+**Keep.** Class 7 is the *author* disclosing that a choice was intentional.
+These are describing how a caller, a user or the code performs an action —
+"explicitly" modifies the verb, not the design. The test: whose intent is being
+disclosed? If the sentence would still be true with "explicitly" replaced by
+"by hand" or "in so many words", it is a mode of action and there is nothing
+to cut. This is the largest single discard family when auditing code comments:
+on a 25k-line TypeScript corpus it was 11 of 28 class-7 candidates.
+
+### "used to" meaning "employed in order to"
+
+> Static module metadata **used to** build params and instantiate its cadence.
+
+> Read-only balances **used to** size payoff and liquidation transactions.
+
+**Keep.** A reduced relative clause — "balances *that are* used to size" — and
+the commonest shape of comment in a typed codebase. The past-habitual sense
+("the catalog used to seed defaults") says a thing no longer happens; this one
+says what a thing is for. The scanner suppresses the appositive and
+`for`/`of`-headed forms and lets the bare noun-phrase definitions through, so
+expect a few of these per corpus.
+
 ### Domain vocabulary that collides with revision vocabulary
 
 > A trade accumulating member **corrections** gets its blurb **revised**
