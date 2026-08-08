@@ -1,10 +1,11 @@
 # The twelve classes, with worked examples
 
 Read this when placing an ambiguous finding or when you want the rewrite
-pattern for a class. Every example is real, drawn from four unrelated
+pattern for a class. Nearly every example is real, drawn from four unrelated
 repositories — a data pipeline, a simulation engine, an image tool and a
 scheduling app — so the patterns here are the ones that recur across domains
-rather than one project's habits.
+rather than one project's habits. Where a class had to reach beyond that
+corpus, its section says so.
 
 - [What not to scan](#what-not-to-scan) — events vs projections
 - [Part I — from revising](#part-i--from-revising) — classes 0, 0.5
@@ -270,6 +271,31 @@ threshold) — check before flagging.
 > **Low, but see the caveat below** → **Move**; put the caveat in a footnote and the cell reads "Low".
 > …shows you the table below without your having to ask for it → **Cut the clause.**
 
+### Class 3 — walking the reader
+
+The writer narrating the reading experience: announcing the tour, staging the
+next stop, voicing the reader's questions for them. Class 2 points at the
+document's geometry; this class performs the journey through it.
+
+These examples are the canonical shapes rather than survey finds — the four
+repos had almost none of this, because design docs written for peers rarely
+walk the reader. The class earns its place anyway: the docs that *do* have it
+(onboarding pages, READMEs that grew out of talks, prose that began life as a
+transcript) have it in every paragraph.
+
+**Genre decides this class.** A tutorial walks the reader by contract —
+someone doing a quickstart asked to be led, and "let's create your first
+project" is the voice they signed up for. The scanner skips paths that look
+like one (`tutorial`, `getting-started`, `walkthrough`, `onboarding`,
+`quickstart`). Everywhere else the reader is mid-task, and the tour-guide
+gestures stand between them and the fact they came for.
+
+> Let's take a look at the configuration format. → **Cut.** The heading already did this job.
+> Now that we've covered ingestion, we can turn to retries. → **Cut** — or, where the dependency is real, **Fold** it into content: "Retries assume the ingest contract above."
+> You might be wondering why the cursor is opaque. → **Fold** → "The cursor is opaque because …". Answer the question instead of performing it.
+> As you can see, the schema mirrors the API. → **Cut the opener.** If they can see it, saying so adds nothing; if they can't, saying so doesn't help.
+> Let's say the file has 100 rows. → **Keep.** "Let's say / assume / define" frames a worked example — a standard device, not a gesture, and the scanner leaves it alone.
+
 ### Class 4 — enumerative pre-announcement
 
 Telling the reader how many items are coming. Cheap to write, and it
@@ -355,7 +381,7 @@ no judgement about content — just name the subject.
 ## False positives
 
 Every one of these was flagged by the scanner on a real repo and was **wrong**.
-They cluster into five families, and knowing them is most of the difference
+They cluster into six families, and knowing them is most of the difference
 between a useful pass and a reader discarding output.
 
 ### "no longer" describing a condition, not a history
@@ -406,6 +432,21 @@ the *subject* or to the *document*.
 plausible alternative. A changelog says what the code used to do. This family
 was common enough — ~25 hits across four repos, none of them real — that the
 pattern matching it was removed from the scanner entirely.
+
+### Perfect tense inside a condition
+
+> Once the index **has been built**, queries hit it instead of the table.
+
+> The lock is released only after the batch **has been written**.
+
+**Keep both.** These name the moment a condition becomes true — runtime
+sequencing, the same shape as the "no longer" family above in a different
+tense. A changelog ("the quote-escape branch **has been added** back") has no
+conditional marker: nothing in the sentence waits on the event, it just
+happened once, off-stage, to the code. The test: swap "has been" for "is".
+"Once the index is built, queries hit it" still works; "the quote-escape
+branch is added back" loses its only content, which was that something
+changed. The scanner suppresses the conditional form and flags the bare one.
 
 ### Domain vocabulary that collides with revision vocabulary
 
