@@ -87,6 +87,24 @@ jobs:
             exit 1
           fi
 
+      # repo-c/src is dirty by construction too, but in comments: without
+      # --code a directory walk must not touch it, with --code it must.
+      - name: ai-slop-audit — code comments are scanned only with --code
+        run: |
+          set +e
+          python3 skills/ai-slop-audit/scripts/scan.py --check evals/fixtures/repo-c/src
+          status=$?
+          set -e
+          if [ "$status" -ne 2 ]; then
+            echo "::error::expected exit 2 without --code on a code-only directory, got $status"
+            exit 1
+          fi
+          if python3 skills/ai-slop-audit/scripts/scan.py --check --code \
+              evals/fixtures/repo-c/src; then
+            echo "::error::--check --code exited 0 on a fixture planted with comment candidates"
+            exit 1
+          fi
+
       # repo-a/src is dirty by construction too, but in comments: without
       # --code a directory walk must not touch it, with --code it must.
       - name: Code comments are scanned only with --code

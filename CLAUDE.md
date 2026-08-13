@@ -40,8 +40,9 @@ way: `repo-a/CLAUDE.md` is clean by construction, and `repo-a/docs/` and the
 comments in `repo-a/src/` are dirty by construction, which is how the
 metadiscourse scanner's exit codes are pinned — including `--code`'s.
 `repo-c` is the same arrangement for `ai-slop-audit`: `CLAUDE.md` clean,
-`docs/` dirty, with the phantom links (`configuration.md`, `deploy.md`)
-broken on purpose. Do not clean the fixtures, and do not "fix" those links.
+`docs/` and the comments in `src/` dirty, with the phantom links
+(`configuration.md`, `deploy.md`) broken on purpose. Do not clean the
+fixtures, and do not "fix" those links.
 
 ## Before committing
 

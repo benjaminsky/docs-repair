@@ -221,6 +221,162 @@ class TestBoldBulletRuns(unittest.TestCase):
                               if f["label"] == "bold-term bullet run"])
 
 
+class TestNewPatterns(unittest.TestCase):
+    def test_model_disclaimer(self):
+        found = scan_text("As an AI language model, note that limits apply.\n")
+        self.assertIn("0a", classes_of(found))
+
+    def test_no_breaking_changes_is_pr_speak(self):
+        found = scan_text("No breaking changes were introduced.\n")
+        self.assertIn("0b", classes_of(found))
+
+    def test_boasts_and_paradigm_shift(self):
+        found = scan_text("The engine boasts a paradigm shift in dispatch.\n")
+        self.assertIn("2", classes_of(found))
+
+    def test_programming_paradigm_is_a_category(self):
+        found = scan_text("Rust supports more than one programming paradigm.\n")
+        hits = [f for f in found if f["label"] == "lexical tell"]
+        self.assertEqual([], hits)
+
+    def test_backbone_role_inflation(self):
+        found = scan_text("The broker serves as the backbone of the system.\n")
+        self.assertIn("2", classes_of(found))
+
+    def test_strikes_a_balance(self):
+        found = scan_text("It strikes a balance between speed and safety.\n")
+        self.assertIn("4", classes_of(found))
+
+    def test_next_generation_sequencing_is_biology(self):
+        found = scan_text("Reads come from next-generation sequencing runs.\n")
+        self.assertNotIn("1", classes_of(found))
+
+
+class TestWrapJoin(unittest.TestCase):
+    def test_phrase_wrapped_across_lines_is_found(self):
+        found = scan_text("Relay is not only a queue\n"
+                          "but also a complete platform.\n")
+        hits = [f for f in found if f["class"] == "4"]
+        self.assertEqual(1, len(hits))
+        self.assertEqual(1, hits[0]["line"])
+
+    def test_wrap_join_stops_at_block_boundaries(self):
+        found = scan_text("Relay is not only a queue\n"
+                          "- but also a complete platform\n")
+        self.assertNotIn("4", classes_of(found))
+
+    def test_wrap_pass_defers_to_per_line_findings(self):
+        found = scan_text("It should seamlessly\n"
+                          "streamline the deploy.\n")
+        self.assertEqual(1, sum(1 for f in found if f["class"] == "2"))
+
+
+class TestCodeComments(unittest.TestCase):
+    def test_hash_comment_is_scanned(self):
+        found = scan_text("POOL = 8  # I've bumped this to handle the load\n",
+                          name="mod.py")
+        self.assertIn("0a", classes_of(found))
+
+    def test_slash_comment_is_scanned(self):
+        found = scan_text("// leverages a robust worker pool\nrun();\n",
+                          name="mod.ts")
+        self.assertEqual({"1", "2"}, classes_of(found))
+
+    def test_hash_inside_a_string_is_not_a_comment(self):
+        found = scan_text('MARKER = "#leverage the pool"\n', name="mod.py")
+        self.assertEqual(found, [])
+
+    def test_url_is_not_a_comment(self):
+        found = scan_text('const u = "https://x.test/delve";\n', name="mod.ts")
+        self.assertEqual(found, [])
+
+    def test_todo_is_a_tracker_item_not_a_finding(self):
+        found = scan_text("# TODO: add retries\n", name="mod.py")
+        self.assertEqual(found, [])
+
+    def test_block_comment_spans_lines_with_real_linenos(self):
+        found = scan_text("/*\n"
+                          " * This delves into the scheduler internals.\n"
+                          " */\n"
+                          "run();\n", name="mod.c")
+        hits = [f for f in found if f["class"] == "2"]
+        self.assertEqual(1, len(hits))
+        self.assertEqual(2, hits[0]["line"])
+
+    def test_brackets_in_comments_are_code_not_placeholders(self):
+        found = scan_text("# maps [Your, Mine] tags to owners\n",
+                          name="mod.py")
+        self.assertNotIn("0c", classes_of(found))
+
+    def test_line_count_is_comment_lines_only(self):
+        text = ("import os\n"
+                "# one comment line\n"
+                "x = 1\n"
+                "y = 2\n")
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "mod.py")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(text)
+            _, n_lines = scan.scan_file(path)
+        self.assertEqual(1, n_lines)
+
+
+class TestCollectCode(unittest.TestCase):
+    def test_directory_walk_takes_code_only_with_the_flag(self):
+        with tempfile.TemporaryDirectory() as d:
+            for name in ("doc.md", "mod.py"):
+                with open(os.path.join(d, name), "w", encoding="utf-8") as fh:
+                    fh.write("x\n")
+            files, _, code_seen = scan.collect([d])
+            self.assertEqual([os.path.join(d, "doc.md")], files)
+            self.assertEqual(1, code_seen)
+            files, _, code_seen = scan.collect([d], include_code=True)
+            self.assertEqual({"doc.md", "mod.py"},
+                             {os.path.basename(f) for f in files})
+            self.assertEqual(0, code_seen)
+
+    def test_a_named_code_file_needs_no_flag(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "mod.py")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write("x = 1\n")
+            files, _, _ = scan.collect([path])
+            self.assertEqual([path], files)
+
+    def test_fix_never_counts_code_files(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "mod.py")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write("# Hope this helps!\n")
+            self.assertEqual(scan.count_safe_fixes([path]), 0)
+
+
+class TestStructureAdditions(unittest.TestCase):
+    def test_numbered_bold_run_is_flagged(self):
+        text = "".join(f"1. **Item {i}**: description\n" for i in range(5))
+        found = scan_text(text)
+        hits = [f for f in found if f["label"] == "bold-term bullet run"]
+        self.assertEqual(1, len(hits))
+
+    def test_separator_confetti(self):
+        text = ("Intro.\n\n---\n\nMore.\n\n---\n\nEven more.\n\n---\n\nEnd.\n")
+        found = scan_text(text)
+        hits = [f for f in found if f["label"] == "separator confetti"]
+        self.assertEqual(1, len(hits))
+
+    def test_two_rules_are_structure_not_confetti(self):
+        text = "Intro.\n\n---\n\nMore.\n\n---\n\nEnd.\n"
+        found = scan_text(text)
+        self.assertEqual([], [f for f in found
+                              if f["label"] == "separator confetti"])
+
+    def test_setext_underline_is_not_a_rule(self):
+        text = ("Title\n---\n\nBody.\n\n---\n\nMore.\n\n---\n\nEnd.\n")
+        found = scan_text(text)
+        self.assertEqual([], [f for f in found
+                              if f["label"] == "separator confetti"])
+
+
 class TestEchoes(unittest.TestCase):
     def test_same_sentence_in_two_files(self):
         line = ("Relay leverages a robust caching layer for "
@@ -241,6 +397,43 @@ class TestEchoes(unittest.TestCase):
             prose = {os.path.join(d, n): [(1, "Run the installer.")]
                      for n in ("a.md", "b.md")}
             found = scan.echoes(prose)
+        self.assertEqual([], found)
+
+    def test_soft_wrap_does_not_hide_a_sentence_echo(self):
+        # The same sentence, wrapped differently in each file — sentences are
+        # split after the paragraph join, so both keys normalise identically.
+        prose = {
+            "a.md": [(1, "Relay leverages a robust caching layer for"),
+                     (2, "lightning-fast responses.")],
+            "b.md": [(1, "Relay leverages a robust caching"),
+                     (2, "layer for lightning-fast responses.")],
+        }
+        found = scan.echoes(prose)
+        self.assertEqual(1, len(found))
+        self.assertEqual({"a.md:1", "b.md:1"}, set(found[0]["sites"]))
+
+    def test_near_verbatim_paragraph_is_an_echo(self):
+        base = ("The compactor walks every segment older than the retention "
+                "window and rewrites live entries into a fresh segment "
+                "before deleting the old one from the journal directory")
+        prose = {
+            "a.md": [(1, base + " on each run.")],
+            "b.md": [(1, base + " every five minutes.")],
+        }
+        found = scan.echoes(prose)
+        self.assertEqual(1, len(found))
+        self.assertIn("similarity", found[0])
+
+    def test_different_paragraphs_do_not_echo(self):
+        prose = {
+            "a.md": [(1, "The compactor walks every segment older than the "
+                         "retention window and rewrites the live entries "
+                         "into a fresh segment before deleting the old.")],
+            "b.md": [(1, "Producers append to the head partition while "
+                         "consumers track their own offsets in a side file "
+                         "that survives restarts of the whole broker.")],
+        }
+        found = scan.echoes(prose)
         self.assertEqual([], found)
 
 

@@ -19,7 +19,7 @@ Nobody writes this on purpose. It arrives through revision: a fact changes, and 
 In Claude Code:
 
 ```
-/plugin marketplace add benjaminsky/metadiscourse-audit
+/plugin marketplace add benjaminsky/docs-repair
 /plugin install benjaminsky@benjaminsky-skills
 ```
 
@@ -48,7 +48,7 @@ No agent, no install — the scanner is a single dependency-free Python file.
 From your project's root:
 
 ```bash
-git clone https://github.com/benjaminsky/metadiscourse-audit /tmp/mda
+git clone https://github.com/benjaminsky/docs-repair /tmp/mda
 python3 /tmp/mda/skills/metadiscourse-audit/scripts/scan.py docs README.md
 ```
 
@@ -139,11 +139,11 @@ The two `/plugin` commands in the [Quickstart](#quickstart) are the whole instal
 If you would rather keep it as a plain skill with no plugin machinery, clone it into your skills directory instead:
 
 ```bash
-git clone https://github.com/benjaminsky/metadiscourse-audit
-cd metadiscourse-audit && ./install.sh
+git clone https://github.com/benjaminsky/docs-repair
+cd docs-repair && ./install.sh
 ```
 
-That installs to `~/.claude/skills/metadiscourse-audit`. Pass `--project` to install into the current repo instead, `--link` to symlink so `git pull` updates it in place, or `--uninstall` to remove it. It will not overwrite a directory it did not create.
+That installs every skill in the repository to `~/.claude/skills/<name>` (pass `--skill metadiscourse-audit` for just one). Pass `--project` to install into the current repo instead, `--link` to symlink so `git pull` updates it in place, or `--uninstall` to remove it. It will not overwrite a directory it did not create.
 
 ### Claude Code on the web
 
@@ -154,7 +154,7 @@ Open the environment settings at [claude.ai/code](https://claude.ai/code) and pu
 ```bash
 #!/bin/bash
 command -v claude >/dev/null || export PATH="/opt/claude-code/bin:$PATH"
-claude plugin marketplace add benjaminsky/metadiscourse-audit || true
+claude plugin marketplace add benjaminsky/docs-repair || true
 claude plugin install benjaminsky@benjaminsky-skills || true
 ```
 
@@ -168,7 +168,7 @@ To scope the skill to one repository rather than every cloud session, commit the
 {
   "extraKnownMarketplaces": {
     "benjaminsky-skills": {
-      "source": { "source": "github", "repo": "benjaminsky/metadiscourse-audit" }
+      "source": { "source": "github", "repo": "benjaminsky/docs-repair" }
     }
   },
   "enabledPlugins": { "benjaminsky@benjaminsky-skills": true }
@@ -180,14 +180,14 @@ To scope the skill to one repository rather than every cloud session, commit the
 `AGENTS.md` is the portable route — Codex, Cursor, Copilot, Gemini CLI, Aider, Windsurf and Zed all read it. Clone the repository somewhere your agent can see, then point at the skill from your `AGENTS.md`:
 
 ```bash
-git clone https://github.com/benjaminsky/metadiscourse-audit .agent/metadiscourse-audit
+git clone https://github.com/benjaminsky/docs-repair .agent/docs-repair
 ```
 
 ```markdown
 ## Documentation
 
 When asked to clean up, tighten or de-cruft docs, follow
-`.agent/metadiscourse-audit/skills/metadiscourse-audit/SKILL.md`.
+`.agent/docs-repair/skills/metadiscourse-audit/SKILL.md`.
 ```
 
 `SKILL.md` is plain Markdown with YAML frontmatter and no tool-specific syntax, so nothing needs translating. `references/classes.md` is loaded on demand, only when a finding is ambiguous.
@@ -199,8 +199,8 @@ Cursor's own `.cursor/rules/*.mdc` format expects MDC files rather than a skill 
 The scanner is a plain command-line tool. Python 3 standard library, no dependencies, no install step:
 
 ```bash
-git clone https://github.com/benjaminsky/metadiscourse-audit ~/src/metadiscourse-audit
-export SCAN=~/src/metadiscourse-audit/skills/metadiscourse-audit/scripts/scan.py
+git clone https://github.com/benjaminsky/docs-repair ~/src/docs-repair
+export SCAN=~/src/docs-repair/skills/metadiscourse-audit/scripts/scan.py
 ```
 
 Run it from the root of the project you are auditing. The corpus arguments

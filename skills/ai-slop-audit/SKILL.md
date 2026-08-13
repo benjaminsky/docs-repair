@@ -1,6 +1,6 @@
 ---
 name: ai-slop-audit
-description: Clean up docs that were generated or heavily edited by an AI assistant — a README, a docs/ folder, a wiki that ballooned after coding-agent sessions — by stripping generation residue and the machine register. Targets chat turns committed as documentation ("I've updated the script", "Hope this helps!", "Let me know if you have any questions"), completion reports pasted where a description belongs ("The following changes were made", "All 47 tests pass"), unfilled template scaffolding and empty sections, links to files that don't exist, emoji-decorated headings, importance inflation ("comprehensive", "robust", "seamless", "production-ready"), the lexical tells ("delve", "leverage", "utilize", "streamline"), essay scaffolding ("In this guide, we'll", "In conclusion"), walls of bold-term bullets, and the same paragraph regenerated into three files. Returns a file:line inventory with cut/fold/verify/keep verdicts and a concrete rewrite for each, and can apply the safe subset. Use it whenever docs are called AI-generated, slop, machine-written or "written by the agent", whenever someone says the docs sound like ChatGPT or read like marketing, whenever a doc folder doubled after agent sessions and someone wants to know what's real, and whenever they want the findings list before any edits. Not for rewriting a freestanding draft pasted into chat, not for revision debris in human-written docs — "previously X, now Y", dated status stamps, buried caveats are metadiscourse-audit's territory — and not for AI-generated code, changelog generation, staleness detection, translation or proofreading.
+description: Clean up docs that were generated or heavily edited by an AI assistant — a README, a docs/ folder, a wiki that ballooned after coding-agent sessions, the comments in source files — by stripping generation residue and the machine register. Targets chat turns committed as documentation ("I've updated the script", "Hope this helps!", "Let me know if you have any questions"), completion reports pasted where a description belongs ("The following changes were made", "All 47 tests pass"), unfilled template scaffolding and empty sections, links to files that don't exist, emoji-decorated headings, importance inflation ("comprehensive", "robust", "seamless", "production-ready"), the lexical tells ("delve", "leverage", "utilize", "streamline"), essay scaffolding ("In this guide, we'll", "In conclusion"), walls of bold-term bullets, and the same paragraph regenerated into three files. Returns a file:line inventory with cut/fold/verify/keep verdicts and a concrete rewrite for each, and can apply the safe subset. Use it whenever docs are called AI-generated, slop, machine-written or "written by the agent", whenever someone says the docs sound like ChatGPT or read like marketing, whenever a doc folder doubled after agent sessions and someone wants to know what's real, and whenever they want the findings list before any edits. Not for rewriting a freestanding draft pasted into chat, not for revision debris in human-written docs — "previously X, now Y", dated status stamps, buried caveats are metadiscourse-audit's territory — and not for AI-generated code, changelog generation, staleness detection, translation or proofreading.
 ---
 
 # AI slop audit
@@ -99,6 +99,7 @@ SCAN=/absolute/path/to/skills/ai-slop-audit/scripts/scan.py
 python3 "$SCAN" docs README.md --exclude drafts/
 python3 "$SCAN" docs --class 0            # generation residue only (0a-0d)
 python3 "$SCAN" docs --json               # machine-readable
+python3 "$SCAN" docs src --code           # also scan code comments
 python3 "$SCAN" docs --class 0 --check    # CI gate: exit 1 on findings
 ```
 
@@ -112,13 +113,32 @@ talking, not the register.
 
 Class 0d — **phantom relative links** — is checked against the filesystem,
 so those findings are facts, not candidates. The scanner also reports
-**echoes** (the same sentence in more than one file, the regenerated-
-boilerplate tell that only shows corpus-wide) and ends with a **density
-table** and a `clean:` line — where to start editing, and what a later
-rewrite must not regress.
+**echoes** at two granularities: sentences repeated verbatim across files
+(matched after paragraphs are joined, so soft wraps don't hide them), and
+paragraphs that are near-verbatim by shingle overlap — the regenerated-
+boilerplate tell that only shows corpus-wide. Both are deterministic;
+"same idea in different words" is yours to catch in triage, where you have
+the files open anyway. It ends with a **density table** and a `clean:`
+line — where to start editing, and what a later rewrite must not regress.
 
 The scanner sees prose. Fenced code blocks are skipped, so placeholder
 values and hallucinated flags inside examples are yours to catch in step 4.
+
+### Code comments
+
+The same residue accumulates next to code — `# I've bumped this to handle
+the new load` beside a constant, `// leverages a robust worker pool` above
+a function — and the register classes apply unchanged. `--code` extends a
+directory walk to source files; a source file named on the command line is
+scanned without the flag, because naming it is the request.
+
+Three differences from prose: TODO, FIXME and their relatives are skipped
+(a TODO is a tracker item living in code, and its "not yet" is its
+content); docstrings are out of scope (a triple-quoted string is data as
+often as documentation); and `--fix` never rewrites a source file — comment
+extraction is heuristic, so every comment finding is applied by hand, with
+Edit. A source file's density divides by its comment lines, not its total
+lines, so the density table still compares prose against prose.
 
 ## Step 4 — verify the claims no scan can
 

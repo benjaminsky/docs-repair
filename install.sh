@@ -6,7 +6,7 @@
 # and refuses to clobber anything it did not put there.
 set -eu
 
-REPO="https://github.com/benjaminsky/metadiscourse-audit"
+REPO="https://github.com/benjaminsky/docs-repair"
 MODE="copy"
 DEST=""
 
