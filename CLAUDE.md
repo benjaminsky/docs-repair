@@ -35,16 +35,19 @@ against the surrounding paragraph rather than the line alone.
 
 ## What is a fixture
 
-`evals/fixtures/` is planted with metadiscourse deliberately, and CI depends
-on it staying that way: `repo-a/CLAUDE.md` is clean by construction, and
-`repo-a/docs/` and the comments in `repo-a/src/` are dirty by construction,
-which is how the scanner's exit codes are pinned — including `--code`'s. Do
-not clean the fixtures.
+`evals/fixtures/` is planted deliberately, and CI depends on it staying that
+way: `repo-a/CLAUDE.md` is clean by construction, and `repo-a/docs/` and the
+comments in `repo-a/src/` are dirty by construction, which is how the
+metadiscourse scanner's exit codes are pinned — including `--code`'s.
+`repo-c` is the same arrangement for `ai-slop-audit`: `CLAUDE.md` clean,
+`docs/` dirty, with the phantom links (`configuration.md`, `deploy.md`)
+broken on purpose. Do not clean the fixtures, and do not "fix" those links.
 
 ## Before committing
 
 ```bash
-python3 skills/metadiscourse-audit/scripts/test_scan.py   # from scripts/
+python3 skills/metadiscourse-audit/scripts/test_scan.py   # from its scripts/
+python3 skills/ai-slop-audit/scripts/test_scan.py         # from its scripts/
 ```
 
 Bump `version` in both `.claude-plugin/plugin.json` and
