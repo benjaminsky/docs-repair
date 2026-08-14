@@ -7,7 +7,7 @@
   },
   "plugins": [
     {
-      "name": "benjaminsky",
+      "name": "docs-repair",
       "source": "./",
       "description": "Documentation repair. metadiscourse-audit finds and removes text whose subject is the document rather than the thing it documents — changelogs written into prose, dated status stamps, caveats buried mid-paragraph, staging tics. ai-slop-audit strips what AI sessions leave in docs — chat residue, completion reports, phantom links, inflation, emoji decoration.",
       "version": "1.4.0",

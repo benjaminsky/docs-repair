@@ -20,7 +20,7 @@ In Claude Code:
 
 ```
 /plugin marketplace add benjaminsky/docs-repair
-/plugin install benjaminsky@benjaminsky-skills
+/plugin install docs-repair@benjaminsky-skills
 ```
 
 Cloud sessions have no `/plugin` prompt — there, the environment's setup
@@ -134,7 +134,7 @@ And the one that only shows up across a whole doc set: four different files each
 
 ### Claude Code
 
-The two `/plugin` commands in the [Quickstart](#quickstart) are the whole install. They give you `/benjaminsky:metadiscourse-audit`, and Claude will reach for it on its own when you describe the problem. Update later with `/plugin marketplace update benjaminsky-skills`.
+The two `/plugin` commands in the [Quickstart](#quickstart) are the whole install. They give you `/docs-repair:metadiscourse-audit` and `/docs-repair:ai-slop-audit`, and Claude will reach for them on its own when you describe the problem. Update later with `/plugin marketplace update benjaminsky-skills`.
 
 If you would rather keep it as a plain skill with no plugin machinery, clone it into your skills directory instead:
 
@@ -155,7 +155,7 @@ Open the environment settings at [claude.ai/code](https://claude.ai/code) and pu
 #!/bin/bash
 command -v claude >/dev/null || export PATH="/opt/claude-code/bin:$PATH"
 claude plugin marketplace add benjaminsky/docs-repair || true
-claude plugin install benjaminsky@benjaminsky-skills || true
+claude plugin install docs-repair@benjaminsky-skills || true
 ```
 
 The `PATH` fallback is there because setup scripts run as root under a non-login shell, where `claude` is not otherwise found. It resolves through `command -v` first, so it does nothing on an image that already puts `claude` on the path, and the directory it falls back to carries no version in its name. The `|| true` matters more: a setup script that exits non-zero stops the session from starting at all.
@@ -171,7 +171,7 @@ To scope the skill to one repository rather than every cloud session, commit the
       "source": { "source": "github", "repo": "benjaminsky/docs-repair" }
     }
   },
-  "enabledPlugins": { "benjaminsky@benjaminsky-skills": true }
+  "enabledPlugins": { "docs-repair@benjaminsky-skills": true }
 }
 ```
 

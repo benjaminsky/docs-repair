@@ -1,6 +1,6 @@
 {
-  "name": "benjaminsky",
-  "description": "benjaminsky's docs-repair skills. metadiscourse-audit — find and remove text whose subject is the document, its author or its reader rather than the thing it documents. ai-slop-audit — strip generation residue and the machine register from AI-written docs.",
+  "name": "docs-repair",
+  "description": "Documentation repair skills. metadiscourse-audit — find and remove text whose subject is the document, its author or its reader rather than the thing it documents. ai-slop-audit — strip generation residue and the machine register from AI-written docs.",
   "version": "1.4.0",
   "author": {
     "name": "benjaminsky"
