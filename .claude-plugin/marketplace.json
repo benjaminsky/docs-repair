@@ -9,12 +9,12 @@
     {
       "name": "benjaminsky",
       "source": "./",
-      "description": "Documentation hygiene. metadiscourse-audit finds and removes text whose subject is the document rather than the thing it documents \u2014 changelogs written into prose, dated status stamps, caveats buried mid-paragraph, staging tics.",
-      "version": "1.3.0",
+      "description": "Documentation repair. metadiscourse-audit finds and removes text whose subject is the document rather than the thing it documents — changelogs written into prose, dated status stamps, caveats buried mid-paragraph, staging tics. ai-slop-audit strips what AI sessions leave in docs — chat residue, completion reports, phantom links, inflation, emoji decoration.",
+      "version": "1.4.0",
       "author": {
         "name": "benjaminsky"
       },
-      "homepage": "https://github.com/benjaminsky/metadiscourse-audit",
+      "homepage": "https://github.com/benjaminsky/docs-repair",
       "license": "MIT",
       "category": "documentation",
       "keywords": [
@@ -22,7 +22,8 @@
         "writing",
         "prose",
         "editing",
-        "cleanup"
+        "cleanup",
+        "ai-slop"
       ]
     }
   ]

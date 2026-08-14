@@ -1,0 +1,41 @@
+{
+  "skill_name": "ai-slop-audit",
+  "evals": [
+    {
+      "id": 0,
+      "name": "slop-cleanup",
+      "prompt": "the docs in ./evals/fixtures/repo-c were mostly written by coding-agent sessions and it shows. can you clean them up?",
+      "expected_output": "Chat residue, the handoff summary and the test-pass assertion removed with live facts preserved (worker pool, port, journal segmentation); emoji stripped from headings; inflation deflated rather than reworded; the two phantom links surfaced as gaps rather than silently deleted; CLAUDE.md untouched.",
+      "files": [
+        "fixtures/repo-c"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "audit-only-no-edits",
+      "prompt": "audit ./evals/fixtures/repo-c/docs for AI slop and give me the list — file and line for everything. don't change any files yet",
+      "expected_output": "A file:line inventory with verdicts and rewrites, phantom links and the cross-file echo included, no files modified.",
+      "files": [
+        "fixtures/repo-c"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "code-comment-audit",
+      "prompt": "the comments in ./evals/fixtures/repo-c/src have the same AI voice as the docs — audit them and give me the list, don't edit anything",
+      "expected_output": "A file:line inventory over relay.py's comments (the leverage/facilitate line and the self-narration beside POOL_SIZE); the TODO line and the round-robin comment not flagged; no file modified.",
+      "files": [
+        "fixtures/repo-c"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "verify-claims",
+      "prompt": "the setup guide in ./evals/fixtures/repo-c/docs makes a lot of confident claims. which ones can't be verified from the repo, and which links are broken?",
+      "expected_output": "Both phantom links named (configuration.md, deploy.md); performance and readiness claims flagged as unverifiable against the fixture; the empty Prerequisites section and the unfilled clustering placeholder reported as gaps.",
+      "files": [
+        "fixtures/repo-c"
+      ]
+    }
+  ]
+}

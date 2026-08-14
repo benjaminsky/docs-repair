@@ -22,8 +22,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: Run unit tests
+      - name: Run unit tests (metadiscourse-audit)
         working-directory: skills/metadiscourse-audit/scripts
+        run: python3 test_scan.py
+      - name: Run unit tests (ai-slop-audit)
+        working-directory: skills/ai-slop-audit/scripts
         run: python3 test_scan.py
 
   scanner:
@@ -57,6 +60,48 @@ jobs:
           set -e
           if [ "$status" -ne 2 ]; then
             echo "::error::expected exit 2 when no standing markdown is found, got $status"
+            exit 1
+          fi
+
+      # repo-c is planted for ai-slop-audit the same way repo-a is planted
+      # for metadiscourse-audit: CLAUDE.md clean, docs/ dirty.
+      - name: ai-slop-audit — a clean file exits 0
+        run: python3 skills/ai-slop-audit/scripts/scan.py --check evals/fixtures/repo-c/CLAUDE.md
+
+      - name: ai-slop-audit — a file with candidates exits 1
+        run: |
+          if python3 skills/ai-slop-audit/scripts/scan.py --check \
+              evals/fixtures/repo-c/docs/setup.md; then
+            echo "::error::--check exited 0 on a fixture planted with candidates"
+            exit 1
+          fi
+
+      - name: ai-slop-audit — scanning nothing exits 2
+        run: |
+          set +e
+          python3 skills/ai-slop-audit/scripts/scan.py .github/workflows
+          status=$?
+          set -e
+          if [ "$status" -ne 2 ]; then
+            echo "::error::expected exit 2 when no standing markdown is found, got $status"
+            exit 1
+          fi
+
+      # repo-c/src is dirty by construction too, but in comments: without
+      # --code a directory walk must not touch it, with --code it must.
+      - name: ai-slop-audit — code comments are scanned only with --code
+        run: |
+          set +e
+          python3 skills/ai-slop-audit/scripts/scan.py --check evals/fixtures/repo-c/src
+          status=$?
+          set -e
+          if [ "$status" -ne 2 ]; then
+            echo "::error::expected exit 2 without --code on a code-only directory, got $status"
+            exit 1
+          fi
+          if python3 skills/ai-slop-audit/scripts/scan.py --check --code \
+              evals/fixtures/repo-c/src; then
+            echo "::error::--check --code exited 0 on a fixture planted with comment candidates"
             exit 1
           fi
 
@@ -142,26 +187,35 @@ jobs:
 
       # SKILL.md carries the frontmatter that decides whether the skill is ever
       # reached, so its absence should fail loudly rather than install quietly.
-      - name: Skill has frontmatter with a description
+      - name: Every skill has frontmatter with a description
         run: |
           python3 - <<'PY'
-          import sys
+          import glob, sys
 
-          path = "skills/metadiscourse-audit/SKILL.md"
-          with open(path, encoding="utf-8") as fh:
-              text = fh.read()
-
-          if not text.startswith("---\n"):
-              print(f"::error::{path} has no YAML frontmatter")
+          paths = sorted(glob.glob("skills/*/SKILL.md"))
+          if not paths:
+              print("::error::no skills/*/SKILL.md found")
               sys.exit(1)
 
-          end = text.find("\n---", 4)
-          if end == -1:
-              print(f"::error::{path} frontmatter is not closed")
-              sys.exit(1)
+          fail = False
+          for path in paths:
+              with open(path, encoding="utf-8") as fh:
+                  text = fh.read()
 
-          front = text[4:end]
-          if "description:" not in front:
-              print(f"::error::{path} frontmatter has no description")
-              sys.exit(1)
+              if not text.startswith("---\n"):
+                  print(f"::error::{path} has no YAML frontmatter")
+                  fail = True
+                  continue
+
+              end = text.find("\n---", 4)
+              if end == -1:
+                  print(f"::error::{path} frontmatter is not closed")
+                  fail = True
+                  continue
+
+              front = text[4:end]
+              if "description:" not in front:
+                  print(f"::error::{path} frontmatter has no description")
+                  fail = True
+          sys.exit(1 if fail else 0)
           PY

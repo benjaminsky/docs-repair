@@ -1,5 +1,10 @@
 # Evals
 
+Top-level `evals.json` and `trigger-eval.json` belong to metadiscourse-audit;
+each other skill keeps its pair in its own subdirectory (`ai-slop-audit/`).
+Fixtures are shared: `repo-a` and `repo-b` are planted for metadiscourse-audit,
+`repo-c` for ai-slop-audit.
+
 `evals.json` — three task prompts that exercise the skill body against
 `fixtures/`, which carries planted artifacts: two version changelogs, a dated
 status stamp, a tracker status claim, a mid-paragraph caveat, two lines of

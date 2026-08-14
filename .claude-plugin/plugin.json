@@ -1,12 +1,12 @@
 {
   "name": "benjaminsky",
-  "description": "benjaminsky's skills. Currently: metadiscourse-audit \u2014 find and remove text whose subject is the document, its author or its reader rather than the thing it documents.",
-  "version": "1.3.0",
+  "description": "benjaminsky's docs-repair skills. metadiscourse-audit — find and remove text whose subject is the document, its author or its reader rather than the thing it documents. ai-slop-audit — strip generation residue and the machine register from AI-written docs.",
+  "version": "1.4.0",
   "author": {
     "name": "benjaminsky"
   },
-  "homepage": "https://github.com/benjaminsky/metadiscourse-audit",
-  "repository": "https://github.com/benjaminsky/metadiscourse-audit",
+  "homepage": "https://github.com/benjaminsky/docs-repair",
+  "repository": "https://github.com/benjaminsky/docs-repair",
   "license": "MIT",
   "keywords": [
     "documentation",
@@ -14,6 +14,7 @@
     "prose",
     "editing",
     "docs",
-    "cleanup"
+    "cleanup",
+    "ai-slop"
   ]
 }

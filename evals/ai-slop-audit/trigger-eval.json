@@ -1,0 +1,23 @@
+[
+  {"query": "most of docs/ was written by Claude sessions over the last few months and it shows — every heading has a rocket emoji and everything is 'comprehensive' and 'seamless'. can you clean it up?", "should_trigger": true},
+  {"query": "this README reads like ChatGPT wrote it. audit it and give me the findings list before you change anything", "should_trigger": true},
+  {"query": "someone committed the agent's summary-of-changes straight into ARCHITECTURE.md — 'the following changes were made', 'all tests pass', the works. find all the chat residue in our docs", "should_trigger": true},
+  {"query": "de-slop docs/. it's full of 'leverage' and 'delve' and walls of bold-term bullet points", "should_trigger": true},
+  {"query": "we let a coding agent document the whole codebase and the docs folder doubled. figure out what's real and what's padding — and check whether the stuff it documented actually exists", "should_trigger": true},
+  {"query": "our wiki export has broken links to files that were never created and empty Troubleshooting sections everywhere. audit it", "should_trigger": true},
+  {"query": "every doc ends with a Conclusion section and 'Let me know if you have any questions'. strip that kind of thing across the whole doc set", "should_trigger": true},
+  {"query": "the docs sound like a landing page — 'blazing fast', 'production-ready', 'takes your workflow to the next level'. make them read like they were written by someone who read the code", "should_trigger": true},
+  {"query": "audit ./docs for AI slop. list first, don't edit", "should_trigger": true},
+
+  {"query": "our docs/ folder is full of 'previously we used X but now we use Y' and dated status stamps from old revisions. make it read like it was written today", "should_trigger": false},
+  {"query": "this blog post I'm publishing tomorrow is pasted below — make it sound less like AI before I post it", "should_trigger": false},
+  {"query": "this AI-generated module is a mess — dead code, weird abstractions, redundant helpers. clean up the code", "should_trigger": false},
+  {"query": "run an AI detector on this student essay and tell me what percentage is machine-written", "should_trigger": false},
+  {"query": "our docs reference getUserToken() but that function was renamed six months ago. find every doc that's stale relative to the code and fix the references", "should_trigger": false},
+  {"query": "use Claude to write comprehensive documentation for the src/ directory — there are no docs at all yet", "should_trigger": false},
+  {"query": "generate a CHANGELOG.md from the last 40 commits in keep-a-changelog format", "should_trigger": false},
+  {"query": "set up Vale in CI with the Google style guide for our docs folder", "should_trigger": false},
+  {"query": "translate docs/quickstart.md into Japanese, keeping code blocks as-is", "should_trigger": false},
+  {"query": "proofread docs/pricing.md for typos and grammar before it goes live", "should_trigger": false},
+  {"query": "we have four docs that each partially explain the auth flow and they contradict each other — figure out which is right and consolidate", "should_trigger": false}
+]
