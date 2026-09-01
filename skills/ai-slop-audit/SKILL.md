@@ -1,6 +1,6 @@
 ---
 name: ai-slop-audit
-description: Clean up docs that were generated or heavily edited by an AI assistant — a README, a docs/ folder, a wiki that ballooned after coding-agent sessions, the comments in source files — by stripping generation residue and the machine register. Targets chat turns committed as documentation ("I've updated the script", "Hope this helps!", "Let me know if you have any questions"), completion reports pasted where a description belongs ("The following changes were made", "All 47 tests pass"), unfilled template scaffolding and empty sections, links to files that don't exist, emoji-decorated headings, importance inflation ("comprehensive", "robust", "seamless", "production-ready"), the lexical tells ("delve", "leverage", "utilize", "streamline"), essay scaffolding ("In this guide, we'll", "In conclusion"), walls of bold-term bullets, and the same paragraph regenerated into three files. Returns a file:line inventory with cut/fold/verify/keep verdicts and a concrete rewrite for each, and can apply the safe subset. Use it whenever docs are called AI-generated, slop, machine-written or "written by the agent", whenever someone says the docs sound like ChatGPT or read like marketing, whenever a doc folder doubled after agent sessions and someone wants to know what's real, and whenever they want the findings list before any edits. Not for rewriting a freestanding draft pasted into chat, not for revision debris in human-written docs — "previously X, now Y", dated status stamps, buried caveats are metadiscourse-audit's territory — and not for AI-generated code, changelog generation, staleness detection, translation or proofreading.
+description: Clean up docs that were generated or heavily edited by an AI assistant — a README, a docs/ folder, a wiki that ballooned after coding-agent sessions, the comments in source files — by stripping generation residue and the machine register. Targets chat turns committed as documentation ("I've updated the script", "Hope this helps!", "Let me know if you have any questions"), completion reports pasted where a description belongs ("The following changes were made", "All 47 tests pass"), unfilled template scaffolding and empty sections, links to files that don't exist, prose that restates what the code already does instead of why it does it, plans left behind after their work merged, emoji-decorated headings, importance inflation ("comprehensive", "robust", "seamless", "production-ready"), the lexical tells ("delve", "leverage", "utilize", "streamline"), essay scaffolding ("In this guide, we'll", "In conclusion"), walls of bold-term bullets, and the same paragraph regenerated into three files. Returns a file:line inventory with cut/fold/verify/keep verdicts and a concrete rewrite for each, and can apply the safe subset. Use it whenever docs are called AI-generated, slop, machine-written or "written by the agent", whenever someone says the docs sound like ChatGPT or read like marketing, whenever a doc folder doubled after agent sessions and someone wants to know what's real, and whenever they want the findings list before any edits. Not for rewriting a freestanding draft pasted into chat, not for revision debris in human-written docs — "previously X, now Y", dated status stamps, buried caveats are metadiscourse-audit's territory — and not for AI-generated code, changelog generation, staleness detection, translation or proofreading.
 ---
 
 # AI slop audit
@@ -73,7 +73,8 @@ changelog is a **record**, written once and read as of its date. A session
 hand-off note saved under `plans/` with a date in its name is a record too —
 its "I've implemented the first two phases" is its content, however it was
 authored. Records are out of scope, and the scanner excludes them by
-default.
+default — which is a rule about scanning, not about keeping: step 5 covers
+the plan that the merge made redundant.
 
 A README, an architecture doc, a runbook is a **standing document**: a
 projection of the system onto now. Class 0 is process residue that leaked
@@ -157,14 +158,92 @@ check them against the code. Three outcomes:
   "seamlessly"s. Lead with these.
 - **True but a restatement** — prose that paraphrases the signature or the
   code beside it, adding nothing the code doesn't say. Verdict Cut, with the
-  code cited as the reason nothing is lost.
+  code cited as the reason nothing is lost. Step 5 is that judgement in
+  full, including where it stops.
 
 Where git helps: `git log --diff-filter=A --format='%an %s' -- <file>` shows
 who or what introduced a document, and a doc whose every line landed in one
 commit alongside generated code is a doc whose claims all date from one
 session — check them as a batch.
 
-## Step 5 — classify and decide
+## Step 5 — cut what the code already says
+
+Step 4 asks whether a claim is true. This step asks whether it was worth
+making. Prose that restates the implementation is true on the day it is
+written and unowned afterwards: nothing updates it when the function
+changes, and nothing warns the reader when it has drifted. The code answers
+*what*; a document earns its place by answering *why*.
+
+The test is a hypothetical edit: **if someone changed the code without
+touching this line, would the line become wrong?** If yes, it is tracking an
+implementation it cannot see, and the implementation says it better —
+verdict Cut, citing the file and symbol that carries the fact. If the line
+would survive that edit — because it explains a constraint, a rejected
+alternative, an invariant spanning files, a reason that lives outside the
+repository — it is doing work no signature can do. Keep it.
+
+What passes the test, in practice:
+
+- The constraint the code obeys but cannot state: "the vendor rejects
+  batches over 500, so the chunk size is not tunable."
+- The alternative that was tried and abandoned, with the symptom that
+  killed it.
+- An invariant holding across two files — the reason both must change
+  together.
+- The interface contract for a reader who will never open the source.
+  Reference documentation written for consumers of a published API is the
+  artifact, not a shadow of one. This step is about prose restating code
+  that its own readers can read.
+
+A restatement is Cut rather than Fold when the code is in the same
+repository, and Fold when a *why* is buried in it: "the `--retries` flag
+sets the retry count, which is 3 by default because the upstream load
+balancer drops idle connections at 4" loses its first clause and keeps its
+second. Where a whole document is a narration of one module, say so in the
+report rather than editing it line by line — the honest fix is deleting the
+file and linking to the source.
+
+### Comments hold to the same standard
+
+`// increment the retry counter` above `retries += 1` is this finding in a
+different file type, and the density of it is higher in code than in prose
+because a session writing code narrates as it goes. A comment stays when it
+names the why: the bug it works around, the boundary case the obvious
+version gets wrong, the reason a slower path was chosen. It goes when a
+reader could recover it by reading the next line.
+
+Two carve-outs, both already the audit's rules: TODO and FIXME are tracker
+items, not narration, and are out of scope; and `--fix` never rewrites a
+source file, so every comment finding is applied by hand with Edit.
+
+### Plans die at the merge; specs do not
+
+Records are excluded from the scan (step 2), and that does not change —
+nothing here is a scanner verdict. But "not scanned" is not "kept forever",
+and the two record types age in opposite directions once the code lands.
+
+A **plan** is a route: phases, ordering, checklists, "then wire the handler
+into the router". When the work is merged the route is redundant with the
+thing it describes, and worse than redundant — a plan reads as intent, so
+the next reader, often the next session, takes a finished plan for
+outstanding work or for a design the code has since moved past. Delete
+merged plans. Git keeps them, and the reason the design is what it is
+belongs in the standing docs anyway, not in the file that predates the
+decision.
+
+A **spec** is a destination: what the system must do, the constraints on
+it, what is deliberately out of scope. Implementation does not consume
+that — it is what the code gets checked against next year. Keep specs,
+including the ones a superpowers-style workflow generates under `specs/`;
+it is the `plans/` beside them that should be cleared out.
+
+Check before deleting: a plan whose phases are half-built is live, and a
+plan carrying the only written record of *why* an approach was chosen needs
+that paragraph moved into the standing docs first. List the plans in the
+report with the commit or code that implements each, and let the author
+confirm the ones that are spent.
+
+## Step 6 — classify and decide
 
 Four verdicts:
 
@@ -187,6 +266,10 @@ never filled ("## Troubleshooting" over nothing) means someone thought the
 section should exist. Cut it by default, but list it in the report as a
 possible gap — the author may want the content, not the removal.
 
+**The code answers what; the doc answers why.** A line that would go wrong
+on its own the next time someone edits the implementation is Cut, per step 5
+— including in comments.
+
 **Echoes get one home.** When the same explanation lives in three files,
 pick the file that owns the topic, keep it there, and replace the others
 with a link. Same rule as any duplicated fact; generation just produces
@@ -201,7 +284,7 @@ For the full taxonomy with worked examples and the false-positive families,
 read `references/patterns.md`. Read it when a finding is ambiguous; the
 summary above is enough for clear cases.
 
-## Step 6 — fix
+## Step 7 — fix
 
 `--fix` applies **only rewrites whose removal cannot lose a fact**:
 
@@ -245,6 +328,11 @@ you do:
 
 ## Verified claims
 <from step 4: false or unbuilt claims first — these outrank everything below>
+
+## Redundant with code
+<from step 5: prose and comments restating the implementation, each with the
+file:symbol that already says it; then merged plans, each with the commit or
+code that implements it>
 
 ## Class 0 — generation residue (N)
 | Where | Text | Verdict |

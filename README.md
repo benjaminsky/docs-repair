@@ -210,6 +210,28 @@ sentence regenerated into three files, because sessions don't read sibling
 docs. The scanner catches echoes at two granularities, verbatim sentences
 and near-verbatim paragraphs, both deterministically.
 
+And the redundancy no vocabulary betrays: prose that restates what the code
+already does. A generated doc narrates the implementation it was written
+beside, which is true when written and unowned after — nothing updates it
+when the function changes. The test is a hypothetical edit: if someone
+changed the code and left the line alone, would the line be wrong? Then the
+code owns it.
+
+```diff
+- The `parse_row` function takes a row and returns a dict. It loops over the
+- configured columns and coerces each value to the column's declared type.
++ A column absent from the header is an error: a silently missing column
++ looked identical to a null in the 2026-02 incident.
+```
+
+Comments are held to the same standard — `# increment the retry counter`
+above `retries += 1` goes; the comment naming the bug it works around stays.
+And the same redundancy at file scale: a **plan** whose work has merged is
+spent, and misleads on top of it, because a plan reads as intent and a
+finished one gets taken for outstanding work. Delete merged plans, keep
+specs — a spec states what the system must do and outlives the code that
+implements it.
+
 What no scan can check, the skill does with the code open: generated prose
 asserts with equal confidence what it verified and what it assumed, so the
 load-bearing claims get checked against the code, and a documented feature
@@ -491,7 +513,7 @@ came back empty. It will not tell you a doc set is accurate either: full
 coverage says every claim was examined, not that the examining was
 infallible.
 
-They will not touch your records. Dated plans, specs, ADRs, RFCs and changelogs are excluded by default. On two real repositories, record documents accounted for 175 of 234 and 117 of 121 of all raw findings — left in, they bury everything that matters.
+They will not touch your records. Dated plans, specs, ADRs, RFCs and changelogs are excluded by default — an exclusion from scanning, not a verdict that they should be kept; the one record the slop audit will propose deleting is a plan whose work has already merged. On two real repositories, record documents accounted for 175 of 234 and 117 of 121 of all raw findings — left in, they bury everything that matters.
 
 They will not strip your conventions. If your rules say that stated and inferred are never blurred, your evidence tags are load-bearing. If you version your rule sets, the version identifiers are load-bearing. If your emoji are a declared system, they stay. Each audit reads those rules before it scans anything.
 
