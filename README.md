@@ -182,6 +182,22 @@ the vocabulary with a plain word underneath:
 + Relay caches hot partitions; p99 read latency is 3 ms.
 ```
 
+And the manner: prose whose *shape* was chosen for effect, where the effect
+is all it delivers — the rule of three with one measured item, fragment
+cadence, "Here's the thing:", a rhetorical question its own next sentence
+answers, the analogy nobody needed.
+
+```diff
+- Here's the thing: Relay is fast, reliable, and effortless to operate.
++ Relay delivers a batch in 3 ms at p99. One operator runs six clusters.
+```
+
+No pattern separates a cadence from a person, so this one arrives only from
+reading — and it carries the audit's strongest guard, because it is the class
+most likely to damage writing that was fine. A chosen voice is a convention
+and stays; a human author's style is not a finding; and no document is ever
+levelled wholesale, because the verdicts are per sentence.
+
 Emoji-decorated headings, empty scaffolded sections, walls of `**Term**:
 description` bullets where a table belongs — and **echoes**: the same
 sentence regenerated into three files, because sessions don't read sibling
