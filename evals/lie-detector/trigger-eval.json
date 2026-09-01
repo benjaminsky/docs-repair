@@ -1,0 +1,18 @@
+[
+  {"query": "can we trust docs/? half of it was written a year ago and I have no idea how much is still true", "should_trigger": true},
+  {"query": "fact-check our README against the actual code and tell me what's wrong", "should_trigger": true},
+  {"query": "spot-check twenty claims from the docs folder and see how many are lies", "should_trigger": true},
+  {"query": "I need an accuracy audit of docs/ — a random sample, and I want to be able to prove the sample wasn't cherry-picked", "should_trigger": true},
+  {"query": "the docs say the default timeout is 30 seconds. are the rest of the numbers in there wrong too?", "should_trigger": true},
+  {"query": "sample some of the guarantees in our runbook and try to disprove them", "should_trigger": true},
+  {"query": "how much of the API reference actually describes flags that exist?", "should_trigger": true},
+  {"query": "audit the comments in src/ for claims that the code contradicts", "should_trigger": true},
+  {"query": "de-slop docs/ — it's full of 'leverage' and rocket emoji and walls of bold bullets", "should_trigger": false},
+  {"query": "this README argues with its own history — 'previously X, now Y' everywhere. clean it up", "should_trigger": false},
+  {"query": "proofread docs/pricing.md for typos before it goes live", "should_trigger": false},
+  {"query": "write documentation for the src/ directory, there isn't any yet", "should_trigger": false},
+  {"query": "generate a CHANGELOG.md from the last 40 commits", "should_trigger": false},
+  {"query": "our competitor's benchmark claims look inflated — check whether their numbers are real", "should_trigger": false},
+  {"query": "translate docs/quickstart.md into Japanese", "should_trigger": false},
+  {"query": "set up a link checker in CI so broken links fail the build", "should_trigger": false}
+]
