@@ -232,7 +232,7 @@ settled it:
 ```bash
 LD=skills/lie-detector/scripts/ledger.py
 python3 "$LD" init docs README.md   # enrol every claim, unverified
-python3 "$LD" plan --limit 10       # the next batch, grouped by evidence
+python3 "$LD" check --backlog       # the next batch, grouped by evidence
 python3 "$LD" record verdicts.json  # write verdicts back, with citations
 python3 "$LD" check                 # the gate: 0 clean, 1 blocking
 ```
@@ -333,12 +333,12 @@ nightly job.
 ```bash
 cd ../repo-d
 python3 "$LEDGER" init docs
-python3 "$LEDGER" plan --limit 4
+python3 "$LEDGER" check --backlog --limit 4
 ```
 
 `init` enrols twelve claims and finds candidate evidence for the ones naming
-a flag or a path; `plan` hands back the four that `src/relay.py` settles, so
-one file answers all of them.
+a flag or a path; `--backlog` hands back the four that `src/relay.py`
+settles, so one file answers all of them.
 
 `repo-c` is the same arrangement for the slop scanner — chat residue, a
 completion report, two phantom links, an empty section and a cross-file echo,
@@ -463,11 +463,11 @@ state rather than a finding list:
 
 ```bash
 python3 "$LEDGER" init docs README.md    # enrol; day one is green
-python3 "$LEDGER" plan --limit 10        # the next batch, by evidence file
+python3 "$LEDGER" check                  # the gate; --strict, --prune
+python3 "$LEDGER" check --backlog        # the next batch, by evidence file
 python3 "$LEDGER" record verdicts.json   # citations required
-python3 "$LEDGER" check --strict         # the gate; unsupported blocks too
 python3 "$LEDGER" show docs/relay.md:16  # provenance for one sentence
-python3 "$LEDGER" wire --print-hook      # run check after every doc edit
+python3 "$LEDGER" init --print-hook      # run check after every doc edit
 
 python3 "$LIE" docs -n 20 --seed drand:4210000   # sampling: a repo you do not own
 python3 "$LIE" --interval 2 18                   # what that sample implies

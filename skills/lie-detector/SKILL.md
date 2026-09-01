@@ -71,9 +71,11 @@ ESLint's bulk suppressions, for prose.
 
 `init` then reports whether the repository's agent instructions mention the
 ledger, and prints the block to add when they do not. **Read the printed
-block to the user and let them decide.** `--wire` appends it (AGENTS.md when
-both it and CLAUDE.md exist; nothing is created unless `--create`), and the
-`PostToolUse` hook behind `wire --print-hook` is a separate, opt-in offer —
+block to the user and let them decide.** `init --wire` appends it — and works on an
+already-enrolled repo, since wiring is a decision that usually comes later
+(AGENTS.md when both it and CLAUDE.md exist; nothing is created unless
+`--create`). The `PostToolUse` hook behind `init --print-hook` is a separate,
+opt-in offer —
 a line of instruction and a hook that executes on every edit are different
 levels of consent.
 
@@ -81,10 +83,28 @@ That line matters more than it looks: the gate catches an unverified claim
 at merge, which is late. The instruction catches it in the session that
 wrote it, which still has the code open.
 
+## The whole surface
+
+Four commands, because a person does four things — enrol once, ask what
+needs attention, write down what they found, look up one sentence. Every
+other view is the same comparison presented differently, so it is a flag on
+`check` rather than a command of its own:
+
+```bash
+ledger.py init docs README.md    # once per repo; --wire, --print-hook
+ledger.py check                  # the gate; --backlog, --prune, --strict
+ledger.py record verdicts.json   # citations required
+ledger.py show docs/relay.md:16  # provenance for one sentence
+```
+
+`check` takes no corpus options: `init` recorded them, and a gate that has
+to be re-told how to walk the corpus is one that eventually gets mis-invoked
+in CI, silently checking less than it reports.
+
 ## Step 2 — work the backlog
 
 ```bash
-python3 "$LD" plan --limit 10
+python3 "$LD" check --backlog --limit 10
 ```
 
 Claims come back **batched by the evidence they need**, because the cost of
@@ -166,6 +186,7 @@ by accident today and will become false with nobody noticing.
 ```bash
 python3 "$LD" check            # 0 clean · 1 blocking · 2 nothing to check
 python3 "$LD" check --strict   # unsupported blocks too
+python3 "$LD" check --prune    # drop entries whose sentence is gone
 ```
 
 Blocking: a new claim with no verdict, a stale one, a refuted one, an edited

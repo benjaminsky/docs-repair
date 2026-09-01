@@ -394,14 +394,30 @@ class TestCommandLine(unittest.TestCase):
     def test_check_without_a_ledger_exits_2(self):
         self.assertEqual(self.run_cli(tree(), "check")[0], 2)
 
-    def test_init_reports_missing_wiring_and_wire_adds_it(self):
+    def test_init_reports_missing_wiring_and_wire_adds_it_later(self):
         root = tree(extra={"AGENTS.md": "# A\n"})
         code, out = self.run_cli(root, "init", os.path.join(root, "docs"))
         self.assertIn("does not mention the claim ledger", out)
-        code, out = self.run_cli(root, "wire", "--apply")
+        code, out = self.run_cli(root, "init", "--wire")
         self.assertEqual(code, 0, out)
         with open(os.path.join(root, "AGENTS.md"), encoding="utf-8") as fh:
             self.assertIn("lie-detector", fh.read())
+
+    def test_check_backlog_lists_unverified_claims(self):
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"))
+        code, out = self.run_cli(root, "check", "--backlog", "--limit", "2")
+        self.assertEqual(code, 0, out)
+        self.assertIn("batched by the evidence", out)
+
+    def test_check_inherits_the_corpus_and_options_from_the_ledger(self):
+        # A gate that has to be re-told how to walk the corpus is one that
+        # eventually gets mis-invoked in CI.
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"), "--code")
+        led = ledger.load_ledger(os.path.join(root, "docs", ".claims.toml"))
+        self.assertTrue(led.get("code"))
+        self.assertEqual(self.run_cli(root, "check")[0], 0)
 
     def test_record_rejects_and_writes_nothing(self):
         root = tree()
@@ -433,7 +449,7 @@ class TestCommandLine(unittest.TestCase):
         self.assertIn("unchanged since", out)
         self.assertNotIn("grandfathered", out)
 
-    def test_prune_drops_orphans_only_when_asked(self):
+    def test_check_prunes_orphans_only_when_asked(self):
         root = tree()
         self.run_cli(root, "init", os.path.join(root, "docs"))
         path = os.path.join(root, "docs", "relay.md")
@@ -441,11 +457,11 @@ class TestCommandLine(unittest.TestCase):
             text = "".join(l for l in fh if "batch-size" not in l)
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(text)
-        code, out = self.run_cli(root, "prune", "--dry-run")
+        code, out = self.run_cli(root, "check", "--prune", "--dry-run")
         self.assertIn("would prune 1", out)
         before = len(ledger.load_ledger(
             os.path.join(root, "docs", ".claims.toml"))["claim"])
-        self.run_cli(root, "prune")
+        self.run_cli(root, "check", "--prune")
         after = len(ledger.load_ledger(
             os.path.join(root, "docs", ".claims.toml"))["claim"])
         self.assertEqual(after, before - 1)

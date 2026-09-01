@@ -6,11 +6,14 @@ other mode — a ledger checked into the audited repository, holding one entry
 per claim with its verdict and the evidence cited for it.
 
     ledger.py init docs README.md      # enrol every claim, unverified
-    ledger.py check                    # what is new, stale or refuted
-    ledger.py plan --limit 10          # the next batch, grouped by evidence
-    ledger.py record verdicts.json     # write verdicts back
+    ledger.py check                    # the gate: new, stale or refuted
+    ledger.py check --backlog          # what to verify next, batched
+    ledger.py record verdicts.json     # write verdicts back, with evidence
     ledger.py show docs/relay.md:16    # provenance for one claim
-    ledger.py wire                     # the AGENTS.md block, printed
+
+Four commands, because a person does four things: enrol once, ask what needs
+attention, write down what they found, and look up one sentence. Everything
+else is a view of the same comparison, so it is a flag on `check`.
 
 The division of labour: everything here is mechanical — extraction, identity,
 hashing, staleness, ordering, the gate. Deciding what evidence settles a
@@ -198,8 +201,11 @@ def dumps(ledger):
            "# evidence that settled it. Re-check with: ledger.py check",
            "schema = %d" % ledger.get("schema", SCHEMA),
            "corpus = %s" % _dump_value(ledger.get("corpus", [])),
-           "generated_at = %s" % _dump_value(ledger.get("generated_at", "")),
-           ""]
+           "generated_at = %s" % _dump_value(ledger.get("generated_at", ""))]
+    for key in ("revision", "code", "include_records", "exclude"):
+        if ledger.get(key):
+            out.append("%s = %s" % (key, _dump_value(ledger[key])))
+    out.append("")
     for claim in sorted(ledger.get("claim", []), key=lambda c: c["id"]):
         out.append("[[claim]]")
         out += _dump_table(claim, CLAIM_KEY_ORDER)
@@ -622,9 +628,15 @@ def _revision(root="."):
 def cmd_init(args):
     root = args.root
     ledger_path = os.path.join(root, args.ledger)
+    if args.print_hook:
+        print(HOOK)
+        return 0
     if os.path.exists(ledger_path) and not args.force:
-        print("%s already exists — use `check` to see what moved, or --force "
-              "to re-enrol from scratch." % args.ledger, file=sys.stderr)
+        if args.wire:
+            return cmd_wire_only(args)
+        print("%s already exists — use `check` to see what moved, `init --wire` "
+              "to add the agent-instructions block, or --force to re-enrol."
+              % args.ledger, file=sys.stderr)
         return 2
 
     entries, files, records = extract(args.paths, args.exclude,
@@ -645,6 +657,14 @@ def cmd_init(args):
               "generated_at": stamp, "claim": list(entries.values())}
     if revision:
         ledger["revision"] = revision
+    # Recorded so later runs inherit them: a gate that has to be re-told how
+    # to walk the corpus is a gate somebody eventually mis-invokes.
+    if args.code:
+        ledger["code"] = True
+    if args.include_records:
+        ledger["include_records"] = True
+    if args.exclude:
+        ledger["exclude"] = list(args.exclude)
     parent = os.path.dirname(ledger_path)
     if parent and not os.path.isdir(parent):
         os.makedirs(parent)
@@ -673,7 +693,7 @@ def cmd_init(args):
 
     print("\nNothing is marked supported. An unverified entry is a claim the")
     print("ledger knows about, not one anybody has an opinion on.")
-    print("\nNext:  ledger.py plan --limit 10")
+    print("\nNext:  ledger.py check --backlog")
     print("Gate:  ledger.py check   (passes today: every claim is exempt)")
 
     _report_wiring(args, root, ledger_path)
@@ -714,7 +734,7 @@ def _report_wiring(args, root, ledger_path):
     print("  Or copy it yourself. Nothing was written.")
     if os.path.isfile(os.path.join(root, ".claude", "settings.json")):
         print("\n  Optional: a PostToolUse hook can run `check` after every doc")
-        print("  edit — see `ledger.py wire --print-hook`. Opt-in: a hook that")
+        print("  edit — see `ledger.py init --print-hook`. Opt-in: a hook that")
         print("  fires on every edit is a preference, not a default.")
 
 
@@ -743,6 +763,18 @@ def apply_wiring(root, target, block, create=False):
     return 0
 
 
+def corpus_from(ledger, args):
+    """The corpus and walk options: the ledger's, unless overridden."""
+    paths = getattr(args, "paths", None) or ledger.get("corpus") or []
+    return {
+        "paths": paths,
+        "excludes": getattr(args, "exclude", None) or ledger.get("exclude", []),
+        "include_records": getattr(args, "include_records", False)
+        or bool(ledger.get("include_records")),
+        "include_code": getattr(args, "code", False) or bool(ledger.get("code")),
+    }
+
+
 def cmd_check(args):
     root = args.root
     ledger_path = os.path.join(root, args.ledger)
@@ -751,15 +783,21 @@ def cmd_check(args):
               file=sys.stderr)
         return 2
     ledger = load_ledger(ledger_path)
-    paths = args.paths or ledger.get("corpus") or []
-    if not paths:
+    if not (args.paths or ledger.get("corpus")):
         print("ledger names no corpus and none was given", file=sys.stderr)
         return 2
 
-    entries, files, _ = extract(paths, args.exclude, args.include_records,
-                                args.code, root)
+    opts = corpus_from(ledger, args)
+    entries, files, _ = extract(opts["paths"], opts["excludes"],
+                                opts["include_records"], opts["include_code"],
+                                root)
     state = compare(entries, ledger, root)
     recorded = claims_by_id(ledger)
+
+    if args.backlog:
+        return _print_backlog(entries, state, recorded, args)
+    if args.prune:
+        return _prune(ledger, entries, ledger_path, args)
 
     blocking, advisory, rows = 0, 0, []
     for entry in state["new"]:
@@ -813,7 +851,7 @@ def cmd_check(args):
 
     if not args.quiet or blocking:
         for level, entry, why in rows:
-            if level == "prune" and not args.verbose:
+            if level == "prune":
                 continue
             print("%-5s %s:%s  %s" % (level, entry["file"], entry.get("line", "?"),
                                       why))
@@ -832,25 +870,14 @@ def cmd_check(args):
         if exempt:
             print("Exemption backlog: %d." % exempt)
         if state["orphan"]:
-            print("%d orphan entr%s — run `ledger.py prune`."
+            print("%d orphan entr%s — run `ledger.py check --prune`."
                   % (len(state["orphan"]),
                      "y" if len(state["orphan"]) == 1 else "ies"))
     return 1 if blocking else 0
 
 
-def cmd_plan(args):
-    root = args.root
-    ledger_path = os.path.join(root, args.ledger)
-    if not os.path.isfile(ledger_path):
-        print("no ledger at %s" % args.ledger, file=sys.stderr)
-        return 2
-    ledger = load_ledger(ledger_path)
-    paths = args.paths or ledger.get("corpus") or []
-    entries, _, _ = extract(paths, args.exclude, args.include_records,
-                            args.code, root)
-    state = compare(entries, ledger, root)
-    recorded = claims_by_id(ledger)
-
+def _print_backlog(entries, state, recorded, args):
+    """The unverified backlog: what to verify next, and in what order."""
     todo = [(e, recorded.get(e["id"])) for e in state["new"]]
     todo += [(e, p) for e, p, _ in state["stale"]]
     todo += [(e, p) for e, p in state["live"]
@@ -904,6 +931,23 @@ def cmd_plan(args):
     print("\nRecord verdicts with: ledger.py record verdicts.json")
     print("Every supported or refuted verdict must quote the file:line that")
     print("settles it — `record` rejects the ones that do not.")
+    return 0
+
+
+def _prune(ledger, entries, ledger_path, args):
+    keep = [c for c in ledger.get("claim", []) if c["id"] in entries]
+    dropped = len(ledger.get("claim", [])) - len(keep)
+    if not dropped:
+        print("no orphans.")
+        return 0
+    if args.dry_run:
+        print("would prune %d orphan entr%s"
+              % (dropped, "y" if dropped == 1 else "ies"))
+        return 0
+    ledger["claim"] = keep
+    with open(ledger_path, "w", encoding="utf-8") as fh:
+        fh.write(dumps(ledger))
+    print("Pruned %d orphan entr%s." % (dropped, "y" if dropped == 1 else "ies"))
     return 0
 
 
@@ -1063,34 +1107,13 @@ def cmd_show(args):
     return 0
 
 
-def cmd_prune(args):
-    root = args.root
-    ledger_path = os.path.join(root, args.ledger)
-    ledger = load_ledger(ledger_path)
-    paths = args.paths or ledger.get("corpus") or []
-    entries, _, _ = extract(paths, args.exclude, args.include_records,
-                            args.code, root)
-    keep = [c for c in ledger.get("claim", []) if c["id"] in entries]
-    dropped = len(ledger.get("claim", [])) - len(keep)
-    if not dropped:
-        print("no orphans.")
-        return 0
-    ledger["claim"] = keep
-    if args.dry_run:
-        print("would prune %d orphan entr%s" % (dropped,
-                                                "y" if dropped == 1 else "ies"))
-        return 0
-    with open(ledger_path, "w", encoding="utf-8") as fh:
-        fh.write(dumps(ledger))
-    print("Pruned %d orphan entr%s." % (dropped, "y" if dropped == 1 else "ies"))
-    return 0
+def cmd_wire_only(args):
+    """`init --wire` on a repository that is already enrolled.
 
-
-def cmd_wire(args):
+    Enrolling happens once; wiring the agent instructions is a decision that
+    often comes later, so it must not require re-enrolling to reach.
+    """
     root = args.root
-    if args.print_hook:
-        print(HOOK)
-        return 0
     ledger = {}
     ledger_path = os.path.join(root, args.ledger)
     if os.path.isfile(ledger_path):
@@ -1101,13 +1124,8 @@ def cmd_wire(args):
         print("Already referenced — %s:%d." % found)
         return 0
     block = block_for(args.ledger, corpus)
-    target = wiring_target(root)
-    if not args.apply:
-        print(block)
-        print("# Not written. Apply with: ledger.py wire --apply"
-              + ("" if target else " --create"))
-        return 0
-    return apply_wiring(root, target, block, create=args.create)
+    print(block)
+    return apply_wiring(root, wiring_target(root), block, create=args.create)
 
 
 def main():
@@ -1126,39 +1144,53 @@ def main():
     common.add_argument("--root", default=argparse.SUPPRESS)
     common.add_argument("--ledger", default=argparse.SUPPRESS)
 
-    def corpus_args(p):
-        p.add_argument("paths", nargs="*")
-        p.add_argument("--exclude", action="append", default=[],
-                       metavar="SUBSTR")
-        p.add_argument("--include-records", action="store_true")
-        p.add_argument("--code", action="store_true",
-                       help="also enrol claims in code comments")
-
-    p_init = sub.add_parser("init", parents=[common], help="enrol every claim, unverified")
-    corpus_args(p_init)
-    p_init.add_argument("--force", action="store_true")
+    # Four commands, because there are four things a person does: enrol once,
+    # ask what needs attention, write down what they found, and look up one
+    # sentence. Views of the same computation are flags on `check`, not
+    # commands of their own.
+    p_init = sub.add_parser("init", parents=[common],
+                            help="enrol every claim, unverified (once per repo)")
+    p_init.add_argument("paths", nargs="*")
+    p_init.add_argument("--exclude", action="append", default=[],
+                        metavar="SUBSTR")
+    p_init.add_argument("--include-records", action="store_true")
+    p_init.add_argument("--code", action="store_true",
+                        help="also enrol claims in code comments")
+    p_init.add_argument("--force", action="store_true",
+                        help="re-enrol from scratch, discarding verdicts")
     p_init.add_argument("--no-candidates", action="store_true")
     p_init.add_argument("--wire", action="store_true",
-                        help="also append the block to the agent instructions")
+                        help="append the block to the agent instructions; "
+                             "works on an already-enrolled repo")
     p_init.add_argument("--create", action="store_true",
                         help="with --wire, create AGENTS.md if none exists")
+    p_init.add_argument("--print-hook", action="store_true",
+                        help="print the PostToolUse hook and exit")
     p_init.set_defaults(func=cmd_init)
 
-    p_check = sub.add_parser("check", parents=[common], help="what is new, stale or refuted")
-    corpus_args(p_check)
+    p_check = sub.add_parser("check", parents=[common],
+                             help="what is new, stale or refuted (the gate)")
+    # No corpus options here on purpose: the ledger records what init was
+    # told, and a gate that must be re-told how to walk the corpus is one
+    # that eventually gets mis-invoked in CI, silently checking less.
+    p_check.add_argument("paths", nargs="*",
+                         help="default: the corpus the ledger records")
     p_check.add_argument("--strict", action="store_true",
                          help="treat unsupported as blocking")
     p_check.add_argument("--quiet", action="store_true",
-                         help="print nothing when the gate passes")
-    p_check.add_argument("--verbose", action="store_true")
+                         help="print nothing unless the gate blocks")
+    p_check.add_argument("--backlog", action="store_true",
+                         help="list what to verify next, batched by evidence")
+    p_check.add_argument("--limit", type=int, default=10,
+                         help="with --backlog, how many to list")
+    p_check.add_argument("--prune", action="store_true",
+                         help="drop entries whose claim is gone")
+    p_check.add_argument("--dry-run", action="store_true",
+                         help="with --prune, show what would go")
     p_check.set_defaults(func=cmd_check)
 
-    p_plan = sub.add_parser("plan", parents=[common], help="the next batch to verify")
-    corpus_args(p_plan)
-    p_plan.add_argument("--limit", type=int, default=10)
-    p_plan.set_defaults(func=cmd_plan)
-
-    p_record = sub.add_parser("record", parents=[common], help="write verdicts back")
+    p_record = sub.add_parser("record", parents=[common],
+                              help="write verdicts back, with their evidence")
     p_record.add_argument("verdicts", help="JSON file of verdicts")
     p_record.add_argument("--by", default="unknown",
                           help="who or what verified these")
@@ -1166,21 +1198,10 @@ def main():
                           help="record the valid ones even if some are rejected")
     p_record.set_defaults(func=cmd_record)
 
-    p_show = sub.add_parser("show", parents=[common], help="provenance for one claim")
+    p_show = sub.add_parser("show", parents=[common],
+                            help="provenance for one claim")
     p_show.add_argument("target", help="claim id, file:line, or a file")
     p_show.set_defaults(func=cmd_show)
-
-    p_prune = sub.add_parser("prune", parents=[common], help="drop entries whose claim is gone")
-    corpus_args(p_prune)
-    p_prune.add_argument("--dry-run", action="store_true")
-    p_prune.set_defaults(func=cmd_prune)
-
-    p_wire = sub.add_parser("wire", parents=[common], help="the agent-instructions block")
-    p_wire.add_argument("paths", nargs="*")
-    p_wire.add_argument("--apply", action="store_true")
-    p_wire.add_argument("--create", action="store_true")
-    p_wire.add_argument("--print-hook", action="store_true")
-    p_wire.set_defaults(func=cmd_wire)
 
     args = ap.parse_args()
     if not args.command:
