@@ -1,0 +1,32 @@
+{
+  "skill_name": "lie-detector",
+  "evals": [
+    {
+      "id": 0,
+      "name": "fact-check-the-docs",
+      "prompt": "I don't trust ./evals/fixtures/repo-d/docs any more — the code has moved a lot since they were written. fact-check them against the code and tell me how bad it is.",
+      "expected_output": "A random sample drawn with a published seed and corpus digest, not a hand-picked set; the timeout (30s documented, TIMEOUT_SECONDS = 10), the retry count (5 documented, MAX_RETRIES = 3) and the parked-report claim (documented on every failure, written by the nightly job) found False with the refuting file:line quoted; a rate reported with its interval rather than a verdict that the docs are accurate.",
+      "files": [
+        "fixtures/repo-d"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "trustworthy-sample",
+      "prompt": "spot-check ./evals/fixtures/repo-d/docs for accuracy, but I want to be able to prove to my team you didn't just pick the claims you already knew were wrong. 8 claims.",
+      "expected_output": "Seed taken from outside the corpus (an external beacon value, or one the requester is asked for) and fixed after the corpus, with the manifest published and the --verify command given; the report states whether the draw is verifiable only or verifiable and unbiasable.",
+      "files": [
+        "fixtures/repo-d"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "guarantees-and-comments",
+      "prompt": "./evals/fixtures/repo-d makes a lot of promises — idempotent, never delivered twice, nothing lost. check whether any of them are actually true, comments included.",
+      "expected_output": "Class C claims checked against the code and against the tests that would catch a break; the journal guarantee reported as unsupported (no journal in the tree) rather than false; --code used so the src/ comments are in the population; unguarded guarantees named with the test that should exist.",
+      "files": [
+        "fixtures/repo-d"
+      ]
+    }
+  ]
+}

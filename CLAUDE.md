@@ -11,8 +11,8 @@ each candidate needs someone deciding what the surviving fact is.
 
 ### Scanning it requires a copy
 
-`scan.py` excludes this repository's own `README.md` by resolved path, along
-with `SKILL.md` and `references/`. A document about metadiscourse quotes
+The two cleanup scanners exclude this repository's own `README.md` by
+resolved path, along with `SKILL.md` and `references/`. A document about metadiscourse quotes
 metadiscourse on nearly every line, and scanning it in place buries real
 findings under its own vocabulary. Pointing the scanner at the file directly
 exits 2 with `no standing markdown found` — that is the exclusion firing, not
@@ -24,6 +24,10 @@ To scan it anyway, copy it somewhere outside the skill directory first:
 cp README.md /tmp/audit/README.md
 python3 skills/metadiscourse-audit/scripts/scan.py /tmp/audit
 ```
+
+`lie-detector`'s scanner excludes nothing here, and should not: a claim this
+README makes about the scanners is checkable against them, so drawing over
+`README.md` and `CLAUDE.md` is the cheapest test that both are still true.
 
 ### Expect a high discard rate
 
@@ -44,13 +48,28 @@ metadiscourse scanner's exit codes are pinned — including `--code`'s.
 (`configuration.md`, `deploy.md`) broken on purpose. Do not clean the
 fixtures, and do not "fix" those links.
 
+`repo-d` is planted for `lie-detector`, and the plant is a disagreement
+rather than a mess: `docs/` documents a 30-second timeout, five retries and
+a parked-batch report written on every failure, while `src/relay.py` holds
+`TIMEOUT_SECONDS = 10`, `MAX_RETRIES = 3` and writes that report from a
+nightly job. Two of its guarantees are true, and the journal guarantee is
+unsettleable from the tree on purpose — it is what an Unsupported verdict
+is tested against. Do not reconcile the docs with the code there.
+
 ## Before committing
 
 ```bash
 python3 skills/metadiscourse-audit/scripts/test_scan.py   # from its scripts/
 python3 skills/ai-slop-audit/scripts/test_scan.py         # from its scripts/
+python3 skills/lie-detector/scripts/test_scan.py          # from its scripts/
 ```
 
 Bump `version` in both `.claude-plugin/plugin.json` and
 `.claude-plugin/marketplace.json` together when the skill changes; CI fails if
 they drift.
+
+`lie-detector`'s draw has to stay reproducible across machines and Python
+versions, so nothing in its sampling path may depend on set iteration,
+dictionary insertion order or the order a filesystem walk returns files. If
+you touch `blocks()`, `normalise()` or the claim id, say so in the commit:
+every published audit's `--verify` stops reproducing when a claim id moves.
