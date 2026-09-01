@@ -3,7 +3,8 @@
 Classes 0a-0d are generation residue: the process leaking into the artifact,
 each with an objective test. Classes 1-6 are the register: what generated
 prose sounds and looks like when nobody pushes back. Echoes are the
-corpus-level pattern with no per-file test at all.
+corpus-level pattern with no per-file test at all, and redundancy with code
+has no scanner test at all — it needs the implementation open.
 
 Load this file when a finding is ambiguous or you want the rewrite patterns;
 `SKILL.md`'s summaries are enough for clear cases.
@@ -144,6 +145,48 @@ so each one regenerates the shared explanation — near-verbatim, because
 they share a register. **Rewrite:** one home (the file that owns the
 topic), links everywhere else.
 
+## Redundancy with code — no scanner class
+
+No pattern catches this one: whether a sentence restates the code is
+answerable only with the code open, which is why it is a step (5) rather
+than a class. It is included here because it produces more Cuts on a
+generated corpus than any register class.
+
+```diff
+- The `parse_row` function takes a row and returns a dict. It loops over the
+- configured columns and coerces each value to the column's declared type.
++ Row values are coerced to the column's declared type; a column absent from
++ the header is an error, because a silently missing column looked identical
++ to a null in the 2026-02 incident.
+```
+
+```diff
+- # increment the retry counter
+  retries += 1
+```
+
+```diff
+- # sleep 400ms
++ # 400ms: the upstream rate limiter's window is 350ms and its clock drifts
+  time.sleep(0.4)
+```
+
+**Test:** if someone edited the implementation and left this line alone,
+would the line become wrong? Then the implementation owns it — Cut, citing
+the symbol. A line that survives that edit is explaining a constraint, a
+rejected alternative, a cross-file invariant or an external reason, and it
+is the part of the document worth having.
+
+**Rewrite:** delete the narration; where a *why* is buried in it, keep only
+that clause. A whole file narrating one module is a report finding, not a
+line-by-line edit — delete it and link the source.
+
+**Records:** a merged plan is the same redundancy at file scale, and it
+misleads on top of it — a plan reads as intent, so a finished one gets taken
+for outstanding work. Delete merged plans; keep specs, which state what the
+system must do and outlive the implementation. Move any *why* that exists
+only in the plan into the standing docs first.
+
 # The false-positive families
 
 Most discards come from a handful of collisions. Check these before
@@ -173,7 +216,12 @@ spending a glance per candidate.
    the adjective is summary, not inflation — Keep, or Fold the two into one
    sentence.
 
-6. **Human-written flourish.** People write "not only… but also" too, and
+6. **Documentation for readers without the source.** A published API
+   reference, an SDK's parameter table, a CLI's flag list: restating the
+   code is what these are for. Step 5 applies to prose shadowing code its
+   own readers can open.
+
+7. **Human-written flourish.** People write "not only… but also" too, and
    people wrote "delve" for centuries before models did. A class 2-4 hit in
    a file that is otherwise clean, with git history showing a human author,
    is probably just their style — the audit removes slop, it does not
