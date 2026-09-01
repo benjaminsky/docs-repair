@@ -49,10 +49,21 @@ inconsistency literature, moved from the method to the corpus.
 ```console
 $ lie-detector init docs README.md
 412 claims extracted, all unverified and exempt. Gate passes.
-$ git add docs/.claims.toml && git commit -m "chore: enrol docs in claim ledger"
+
+! AGENTS.md does not mention the claim ledger — suggested addition printed
+  above. Apply with: lie-detector init --wire
+
+$ lie-detector init --wire
+Appended 11 lines to AGENTS.md.
+
+$ git add docs/.claims.toml AGENTS.md
+$ git commit -m "chore: enrol docs in claim ledger"
 ```
 
-One command, one commit, green build. Nothing is claimed to be true. The
+Two commands, one commit, green build. The `AGENTS.md` line is what makes
+flow 5 work at all: without it a session writing docs learns about the
+ledger from a red build, having already lost the context that would have
+answered the question. Nothing is claimed to be true. The
 value on day 0 is entirely "no *new* lies from here", which is worth having
 before a single claim is verified.
 

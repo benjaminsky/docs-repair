@@ -126,6 +126,88 @@ At ten claims a sitting, batched, 412 is a few weeks of someone's coffee.
 And it never has to finish to be useful: from the first run, no *new* lie
 can enter the docs without the gate objecting.
 
+## Init also offers to wire itself into the agent instructions
+
+The gate catches an unverified claim at merge. That is late: the session
+that wrote the claim is gone, and someone reloads the code cold to answer a
+question the author could have answered for free. The fix is for the *agent*
+to know the ledger exists, which means a line in whatever file the repo uses
+to instruct agents.
+
+So `init` looks for one, and says so when it does not find a reference:
+
+```console
+$ lie-detector init docs README.md
+  412 claims extracted. Wrote docs/.claims.toml.
+
+! AGENTS.md and CLAUDE.md exist; neither mentions the claim ledger.
+  Without a reference there, a session writing docs will not know to verify
+  its own claims, and the first thing that tells it is a red build.
+
+  Suggested addition to AGENTS.md (11 lines):
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │ ## Documentation claims                                             │
+  │                                                                     │
+  │ `docs/.claims.toml` is a ledger of every factual claim in `docs/`   │
+  │ and `README.md`, with the evidence that settled each one.           │
+  │                                                                     │
+  │ After editing those docs, or changing a default, flag, path or      │
+  │ guarantee they describe, run `lie-detector check`. Verify whatever  │
+  │ it reports as new or stale in the same session — you already have   │
+  │ the code open, and nobody downstream will.                          │
+  │                                                                     │
+  │ Never record a verdict without quoting the `file:line` that settles │
+  │ it. If nothing settles it, `unsupported` is the honest answer.      │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  Apply it:   lie-detector init --wire        (appends, then re-checks)
+  Or copy it yourself. Nothing was written.
+```
+
+**It suggests; it never writes.** Editing the file that governs how every
+agent behaves in a repository is not a side effect anyone should discover
+after the fact — same rule as `--fix` in the sibling audits, and for a
+sharper reason: this file is instructions, not prose.
+
+### Which file, and what if there are several
+
+| Found | Where the suggestion goes |
+| --- | --- |
+| `AGENTS.md` only | `AGENTS.md` |
+| `CLAUDE.md` only | `CLAUDE.md` |
+| both | `AGENTS.md`, since more tools read it; noted as already covering Claude Code if `CLAUDE.md` points at it |
+| neither | print the block and the file it would create, but create nothing without `--wire`; a repo with no agent instructions may not want its first one to be ours |
+
+Also checked: `CONTRIBUTING.md`, `.cursor/rules/*.mdc`, `.github/copilot-instructions.md`. A reference in any of them counts — the point is that *something* an agent reads mentions the ledger, not that a particular file does.
+
+**Detection** is a search for `lie-detector` or the ledger's own path. Coarse
+on purpose: a repo that mentions either has made a decision, and re-nagging
+it every `init` is how a tool teaches people to ignore it. Re-running on a
+wired repo says `already referenced — AGENTS.md:34` and moves on.
+
+**Length is a constraint, not an afterthought.** Every line here competes
+with the repo's real instructions for an agent's attention, and a block long
+enough to skim past is worse than none. Eleven lines, three sentences of
+rule, no explanation of how the tool works internally — the skill can be
+read when it is needed.
+
+### The second, separate offer
+
+If the repo has `.claude/settings.json`, `init` mentions the hook that turns
+"run check after editing docs" from an instruction an agent may forget into
+one the harness enforces:
+
+```console
+  Optional: a PostToolUse hook on Write/Edit of docs/** runs check
+  automatically. See `lie-detector init --print-hook`. Opt-in — a hook that
+  fires on every doc edit is a preference, not a default.
+```
+
+Offered separately and never bundled into `--wire`, because a line of
+instruction and a hook that executes on every edit are different levels of
+consent.
+
 ## What this means for the skill's shape
 
 Init is where it becomes obvious that the script and the skill are doing
