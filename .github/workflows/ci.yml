@@ -28,9 +28,12 @@ jobs:
       - name: Run unit tests (ai-slop-audit)
         working-directory: skills/ai-slop-audit/scripts
         run: python3 test_scan.py
-      - name: Run unit tests (lie-detector)
+      - name: Run unit tests (lie-detector, sampling)
         working-directory: skills/lie-detector/scripts
         run: python3 test_scan.py
+      - name: Run unit tests (lie-detector, ledger)
+        working-directory: skills/lie-detector/scripts
+        run: python3 test_ledger.py
 
   scanner:
     name: scanner exit codes
@@ -190,6 +193,59 @@ jobs:
           fi
           python3 skills/lie-detector/scripts/scan.py --code -n 2 --seed ci \
               evals/fixtures/repo-d/src
+
+      # The ledger's value is entirely in what it refuses. A regression that
+      # let a verdict be recorded without evidence would leave every command
+      # working and the tool worthless, so both directions are pinned here.
+      - name: lie-detector — init enrols, gate passes, new claim fails it
+        run: |
+          rm -rf /tmp/ldci && cp -r evals/fixtures/repo-d /tmp/ldci
+          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci --ledger docs/.claims.toml"
+          $LD init /tmp/ldci/docs > /dev/null
+          $LD check > /dev/null
+          printf '\nThe `--flush-interval` flag defaults to 60 seconds.\n' \
+              >> /tmp/ldci/docs/relay.md
+          set +e; $LD check > /dev/null; status=$?; set -e
+          if [ "$status" -ne 1 ]; then
+            echo "::error::a new unverified claim did not fail the gate (got $status)"
+            exit 1
+          fi
+
+      - name: lie-detector — record refuses a verdict with no evidence
+        run: |
+          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci --ledger docs/.claims.toml"
+          ID=$(python3 -c "
+          import sys; sys.path.insert(0, '$PWD/skills/lie-detector/scripts')
+          import ledger
+          print(ledger.load_ledger('/tmp/ldci/docs/.claims.toml')['claim'][0]['id'])")
+          echo "[{\"id\": \"$ID\", \"verdict\": \"supported\"}]" > /tmp/ldci/bad.json
+          set +e; $LD record /tmp/ldci/bad.json > /dev/null 2>&1; status=$?; set -e
+          if [ "$status" -ne 1 ]; then
+            echo "::error::record accepted a supported verdict citing no evidence"
+            exit 1
+          fi
+
+      - name: lie-detector — a code change stales the claims that cite it
+        run: |
+          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci --ledger docs/.claims.toml"
+          ID=$(python3 -c "
+          import sys; sys.path.insert(0, '$PWD/skills/lie-detector/scripts')
+          import ledger
+          led = ledger.load_ledger('/tmp/ldci/docs/.claims.toml')
+          print(next(c['id'] for c in led['claim'] if 'batch-size' in c['text']))")
+          cat > /tmp/ldci/ok.json <<JSON
+          [{"id": "$ID", "verdict": "supported",
+            "evidence": [{"file": "src/relay.py", "lines": "3",
+                          "quote": "BATCH_SIZE = 500"}]}]
+          JSON
+          $LD record /tmp/ldci/ok.json --by ci > /dev/null
+          sed -i 's/BATCH_SIZE = 500/BATCH_SIZE = 100/' /tmp/ldci/src/relay.py
+          set +e; out=$($LD check); status=$?; set -e
+          if [ "$status" -ne 1 ] || ! echo "$out" | grep -q "evidence moved"; then
+            echo "::error::a moved constant did not stale the claim citing it"
+            echo "$out"
+            exit 1
+          fi
 
   manifests:
     name: plugin manifests

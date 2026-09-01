@@ -227,6 +227,7 @@ CLAIM_CLASSES = [
     # the ones a reader would call a promise if the code broke it.
     ("C", "guarantee or absolute", re.compile(
         r"\b(?:never|always|every|none|only|cannot|can't"
+        r"|rarely|seldom|usually|typically|generally|mostly|almost\s+always"
         r"|no\s+\w+\s+(?:is|are|can)|guarantees?|guaranteed|ensures?"
         r"|idempotent|atomic|thread-safe|lossless|immutable|deterministic"
         r"|in\s+every\s+case)\b", re.I)),

@@ -27,6 +27,33 @@
       "files": [
         "fixtures/repo-d"
       ]
+    },
+    {
+      "id": 3,
+      "name": "enrol-and-wire",
+      "prompt": "set up claim tracking for ./evals/fixtures/repo-d/docs so our docs stop drifting from the code. I want it enforced going forward, not a one-off report.",
+      "expected_output": "ledger.py init run against the fixture, producing docs/.claims.toml with every claim unverified and exempt and nothing marked supported; the missing agent-instruction reference surfaced with the suggested block shown to the user rather than written silently; the gate explained as passing on day one and enforcing on new or edited claims.",
+      "files": [
+        "fixtures/repo-d"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "verify-a-batch",
+      "prompt": "work through the first batch of unverified claims in ./evals/fixtures/repo-d and record what you find.",
+      "expected_output": "plan used to batch by evidence file rather than verifying in id order; the timeout (30s documented, TIMEOUT_SECONDS = 10) and retries (5 documented, MAX_RETRIES = 3) recorded refuted with corrections and quoted evidence; the journal guarantee recorded unsupported with the search listed, not refuted; no verdict recorded without a file:line quote.",
+      "files": [
+        "fixtures/repo-d"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "code-change-stales-a-claim",
+      "prompt": "I changed MAX_RETRIES in ./evals/fixtures/repo-d/src/relay.py from 3 to 8. Does anything in the docs need updating?",
+      "expected_output": "check used rather than re-reading the whole corpus; only the claims citing that line reported stale; the doc corrected and the verdict re-recorded against the new evidence, with the point made that the in-flight correction was itself out of date.",
+      "files": [
+        "fixtures/repo-d"
+      ]
     }
   ]
 }

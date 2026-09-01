@@ -121,6 +121,48 @@ documentation makes on someone else's authority.
    different file type, the test suite. Unsupported is the verdict for a
    search that came back empty; False needs the contradicting line quoted.
 
+# What the ledger asks of each verdict
+
+`record` enforces these; the reasoning is here so the enforcement does not
+read as bureaucracy.
+
+**supported** — cite the `file:line` and quote it. The quote is checked
+against the file, so a citation that does not say what the verdict claims is
+rejected. Add `guarded_by` when a test would catch the claim breaking, and
+leave it empty when none would: a guarantee true by accident is a finding.
+
+**refuted** — cite the contradicting line *and* write the correction. Whoever
+trusted the sentence needs the true statement, not just the news that the old
+one was wrong. Set `severity` high when a reader acting on the claim gets a
+wrong result.
+
+**unsupported** — record what you searched. This is what makes the verdict
+falsifiable by the next reader: if the journal does exist and the search was
+bad, the list shows exactly how it was bad. An unsupported verdict is never a
+failure to try; it is the honest answer when the tree cannot settle a claim,
+and it must stay cheaper to record than a fabricated supported.
+
+**unverifiable** — no evidence could settle the sentence. Report the count;
+the individual sentences are `ai-slop-audit`'s territory, since a doc set
+that is 15% unfalsifiable has a writing problem rather than a truth problem.
+
+# When a claim moves
+
+The ledger distinguishes two kinds of edit, and it is worth knowing which
+you are looking at:
+
+- **The skeleton moved** — a number, unit, quantifier or identifier changed.
+  The claim now asserts something different, and the old verdict says nothing
+  about it. Re-verify.
+- **The evidence moved** — the cited lines changed under a verdict that still
+  reads correctly. Re-verify *against the new lines*: this is the case where
+  a doc was right, the code changed, and the doc is now wrong without anyone
+  touching it. It is the whole reason the ledger hashes evidence.
+
+A rewrite that changes both is an orphan plus a new claim. When it is
+genuinely the same claim reworded, record the new one with
+`supersedes = "<old id>"` so the history survives.
+
 # What a sample supports
 
 The scanner's `--interval K N` prints a 95% Wilson interval, which is the

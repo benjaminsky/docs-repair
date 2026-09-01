@@ -62,6 +62,7 @@ is tested against. Do not reconcile the docs with the code there.
 python3 skills/metadiscourse-audit/scripts/test_scan.py   # from its scripts/
 python3 skills/ai-slop-audit/scripts/test_scan.py         # from its scripts/
 python3 skills/lie-detector/scripts/test_scan.py          # from its scripts/
+python3 skills/lie-detector/scripts/test_ledger.py        # from its scripts/
 ```
 
 Bump `version` in both `.claude-plugin/plugin.json` and
@@ -73,3 +74,12 @@ versions, so nothing in its sampling path may depend on set iteration,
 dictionary insertion order or the order a filesystem walk returns files. If
 you touch `blocks()`, `normalise()` or the claim id, say so in the commit:
 every published audit's `--verify` stops reproducing when a claim id moves.
+
+The ledger has a sharper version of the same rule. `identity_key()` decides
+which claim an entry *is*, and `skeleton()` decides when a verdict goes
+stale; changing either silently re-keys or re-stales every ledger in the
+wild. Touch them only deliberately, and never make `record` accept a verdict
+that cites no evidence — that check is the reason a ledger is worth more
+than an assertion. `ledger.py` also parses its own TOML below Python 3.11,
+so any new field must round-trip through both readers: `test_ledger.py`
+pins that.

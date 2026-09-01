@@ -4,7 +4,7 @@ Docs Repair is three audits over standing documentation — the README, the docs
 
 - **metadiscourse-audit** removes what *human revision* leaves behind: text whose subject is the document, its author or its reader rather than the thing it documents.
 - **ai-slop-audit** removes what *AI sessions* leave behind: generation residue and the machine register.
-- **lie-detector** samples the factual claims and tries to disprove them against the code, by a lottery anyone can recompute.
+- **lie-detector** verifies the factual claims against the code and keeps a ledger of what settled each one, so a doc set gets a coverage number and a CI gate.
 
 ```diff
 - An earlier draft of this doc said the timeout was 30s. It is 10s.
@@ -44,8 +44,8 @@ Then describe the problem in your own words, and ask for the findings list first
 > Most of `docs/` was written by coding-agent sessions and it shows. De-slop
 > it — list first, and check whether the things it documents actually exist.
 
-> I don't trust `docs/` any more. Fact-check twenty claims against the code,
-> and pick them so I can prove to my team you didn't cherry-pick.
+> Our docs keep drifting from the code. Enrol every claim in `docs/` in a
+> ledger, wire the gate into CI, and start working the backlog.
 
 Every finding comes back as `file:line`, the verbatim text, a class, a verdict,
 and the rewrite. Then approve a slice:
@@ -70,7 +70,7 @@ From your project's root:
 git clone https://github.com/benjaminsky/docs-repair /tmp/dr
 python3 /tmp/dr/skills/metadiscourse-audit/scripts/scan.py docs README.md
 python3 /tmp/dr/skills/ai-slop-audit/scripts/scan.py docs README.md
-python3 /tmp/dr/skills/lie-detector/scripts/scan.py docs README.md -n 20
+python3 /tmp/dr/skills/lie-detector/scripts/ledger.py init docs README.md
 ```
 
 Each prints its candidates by `file:line`, and its last lines tell you how
@@ -217,61 +217,66 @@ that doesn't exist leads the report — it outranks fifty "seamlessly"s.
 
 ## What lie-detector finds
 
-Claims the tree contradicts — and it finds them without letting anyone,
-including itself, choose which claims get checked.
+Claims the tree contradicts:
 
 ```
-docs/relay.md:16  [A numeric or default]  id 54df497d89ca
-    Relay retries a failed flush 5 times before parking the batch.
-    → False. src/relay.py:5 — MAX_RETRIES = 3
+docs/relay.md:16  refuted
+    "Relay retries a failed flush 5 times before parking the batch."
+    → src/relay.py:5 — MAX_RETRIES = 3
 ```
 
-The scanner extracts the **checkable** claims from a corpus — defaults and
-limits, flags and paths and env vars, guarantees like "never" and "every",
-version and platform requirements, behaviour on error — and then draws n of
-them by lottery. Each claim gets a ticket, `sha256(seed || claim id)`; the
-lowest tickets win. Publish the seed and the corpus digest, and anyone can
-rerun the command and get your sample back:
+It works from a **ledger** checked into your repository — one entry per
+factual claim, carrying the verdict and the `file:line` evidence that
+settled it:
 
 ```bash
-python3 "$LIE" docs README.md -n 20 --seed drand:4210000 --json > audit.json
-python3 "$LIE" docs README.md --verify audit.json      # DRAW REPRODUCES
+LD=skills/lie-detector/scripts/ledger.py
+python3 "$LD" init docs README.md   # enrol every claim, unverified
+python3 "$LD" plan --limit 10       # the next batch, grouped by evidence
+python3 "$LD" record verdicts.json  # write verdicts back, with citations
+python3 "$LD" check                 # the gate: 0 clean, 1 blocking
 ```
 
-That gives two properties worth keeping apart, because most "random samples"
-only have the first. The draw is **verifiable** — anyone can recompute it.
-It is **unbiasable** only if the seed came from outside: a drand round, a
-beacon pulse, a string the person who asked for the audit picked. The
-default seed is the corpus's own git HEAD, which the drawer could re-roll by
-committing again, and the output says so in as many words rather than
-implying a rigour it does not have.
+**Day one is green.** `init` grandfathers the existing backlog as exempt and
+marks nothing supported, so adoption costs one command and one commit — the
+same move as `cargo vet init`'s exemptions and ESLint's bulk suppressions.
+From that moment the gate enforces on anything *new*: a claim you add, or one
+you edit, needs a verdict before the build passes.
 
-The skill body does the part no scanner can. For each drawn claim it writes
-the disproof test *before* opening the evidence — read the code first and
-you will find a way to read the sentence as true — and then returns one of
-four verdicts: **False** (with the refuting `file:line` quoted), **True**
-(with the confirming one), **Unsupported** when nothing in the tree settles
-it, and **Unfalsifiable** when the sentence asserts nothing checkable. That
-last one is replaced from the **queue**, the next claim in draw order, never
-by one the auditor liked better — which is the only reason the sample still
-means anything after the swaps.
+**Nothing is maintained by hand.** Every run re-derives the claim set from
+the documents and diffs it against the ledger, so a doc edit cannot escape
+unnoticed — it is new, stale, or an orphan. Forgetting is not a failure mode.
 
-Absence of evidence is Unsupported, never False: the worst thing this audit
-can do is call a claim a lie because a grep missed it. And a guarantee no
-test would catch breaking gets reported even when it holds — it is not a lie today, it is a claim whose truth is
-accidental.
+**Only what moved is re-verified**, which is what makes checking every claim
+affordable. Each verdict is anchored to the claim's *skeleton* — its numbers,
+units, identifiers and quantifiers — and to a hash of the evidence it cites.
+Reword a sentence and the verdict holds; change 500 to 100, or "never" to
+"rarely", or the constant the claim cites, and that one entry goes stale:
 
-Then it reports a rate rather than a verdict:
+```
+$ python3 "$LD" check
+FAIL  docs/relay.md:13  stale — evidence moved: src/relay.py:3
+ok    44 supported
 
-```bash
-python3 "$LIE" --interval 2 18
-2 false in 18 drawn.
-Corpus false-claim rate: 11% observed, 95% interval 3%-32%.
+1 blocking, 0 advisory. Coverage 95% (45/47 verified).
 ```
 
-Nothing disproved in twenty draws is consistent with one claim in six being
-wrong. "The docs are accurate" is not a sentence a sample can support, and
-this audit will not write it.
+**`record` enforces what each verdict owes.** There are four — supported,
+refuted, unsupported, unverifiable — and the rules are refusals: a
+supported verdict must quote evidence that is really at the line it cites, a
+refuted one must carry the correction, an unsupported one must record what
+was searched. Absence of evidence is `unsupported`, never `refuted`. A ledger
+of rubber-stamped verdicts is worse than none, because it launders assumption
+as evidence.
+
+**It offers to wire itself in.** If nothing in `AGENTS.md` or `CLAUDE.md`
+mentions the ledger, `init` prints the block that tells future sessions to
+verify their own claims — and prints it rather than writing it, because the
+file that governs how every agent behaves in your repo is not a side effect.
+
+For a repository you do not own, there is a second, stateless mode: a
+reproducible random sample, drawn by a lottery anyone can recompute from a
+published seed, reported as a rate with a confidence interval.
 
 ## A worked run
 
@@ -282,6 +287,7 @@ pointing either audit at your own docs. From the root of your clone:
 export SCAN=$PWD/skills/metadiscourse-audit/scripts/scan.py
 export SLOP=$PWD/skills/ai-slop-audit/scripts/scan.py
 export LIE=$PWD/skills/lie-detector/scripts/scan.py
+export LEDGER=$PWD/skills/lie-detector/scripts/ledger.py
 cd evals/fixtures/repo-a
 python3 "$SCAN" docs CLAUDE.md
 ```
@@ -322,16 +328,17 @@ not regress. The skipped record is the ADR, left alone by design. `--fix
 `repo-d` is planted for the lie detector, and its plant is a disagreement
 rather than a mess: the docs state a 30-second timeout, five retries and a
 report written on every failure, while `src/relay.py` holds `10`, `3` and a
-nightly job. A draw with a fixed seed reproduces anywhere:
+nightly job.
 
 ```bash
 cd ../repo-d
-python3 "$LIE" docs -n 4 --seed drand:4210000
+python3 "$LEDGER" init docs
+python3 "$LEDGER" plan --limit 4
 ```
 
-Every line the draw prints is enough to recompute it — the seed, the corpus
-digest, the population size and each claim's id — and `--json` writes that
-as a manifest for `--verify`.
+`init` enrols twelve claims and finds candidate evidence for the ones naming
+a flag or a path; `plan` hands back the four that `src/relay.py` settles, so
+one file answers all of them.
 
 `repo-c` is the same arrangement for the slop scanner — chat residue, a
 completion report, two phantom links, an empty section and a cross-file echo,
@@ -402,8 +409,9 @@ When asked to clean up, tighten or de-cruft docs, follow
 `.agent/docs-repair/skills/metadiscourse-audit/SKILL.md`.
 When asked to strip AI slop or AI voice from docs, follow
 `.agent/docs-repair/skills/ai-slop-audit/SKILL.md`.
-When asked whether the docs are true — fact-check, spot-check, accuracy
-audit — follow `.agent/docs-repair/skills/lie-detector/SKILL.md`.
+When asked whether the docs are true, or to keep them true — fact-check,
+accuracy audit, doc drift in CI — follow
+`.agent/docs-repair/skills/lie-detector/SKILL.md`.
 ```
 
 Each `SKILL.md` is plain Markdown with YAML frontmatter and no tool-specific syntax, so nothing needs translating. The `references/` files are loaded on demand, only when a finding is ambiguous.
@@ -450,16 +458,19 @@ constant, `# I've bumped this to handle the new load` above the bump.
 command line needs no flag. TODO and FIXME lines are left alone — a TODO is
 a tracker item living in code, and its "not yet" is its content.
 
-The lie detector's flags are about the draw rather than about classes,
-because its output is a sample and not a finding list:
+The lie detector has two commands rather than flags, because its output is
+state rather than a finding list:
 
 ```bash
-python3 "$LIE" docs -n 20 --seed drand:4210000   # a seed nobody controls
-python3 "$LIE" docs --pool                       # the population, undrawn
-python3 "$LIE" docs --class A                    # stratify: numbers only
-python3 "$LIE" docs --json > audit.json          # the manifest, to publish
-python3 "$LIE" docs --verify audit.json          # exit 1 if it does not reproduce
-python3 "$LIE" --interval 2 18                   # what the result implies
+python3 "$LEDGER" init docs README.md    # enrol; day one is green
+python3 "$LEDGER" plan --limit 10        # the next batch, by evidence file
+python3 "$LEDGER" record verdicts.json   # citations required
+python3 "$LEDGER" check --strict         # the gate; unsupported blocks too
+python3 "$LEDGER" show docs/relay.md:16  # provenance for one sentence
+python3 "$LEDGER" wire --print-hook      # run check after every doc edit
+
+python3 "$LIE" docs -n 20 --seed drand:4210000   # sampling: a repo you do not own
+python3 "$LIE" --interval 2 18                   # what that sample implies
 ```
 
 For CI, gate on the objective classes alone:
@@ -467,6 +478,7 @@ For CI, gate on the objective classes alone:
 ```bash
 python3 "$MDA" docs --class 0 --check
 python3 "$ASA" docs --class 0 --check
+python3 "$LEDGER" check
 ```
 
 `--fix` applies only the rewrites whose removal cannot lose a fact: stripping a "worth …" wrapper, deleting a pleasantry line, removing emoji from a heading. Expect single digits across a large corpus, often zero. It never rewrites a source file — comment extraction is heuristic, so those findings stay in human hands. Everything else needs someone to decide what the surviving fact is, and keeping `--fix` that narrow is what makes it safe to run unattended.
@@ -475,9 +487,9 @@ python3 "$ASA" docs --class 0 --check
 
 The lie detector will not call a claim false because it could not find the
 evidence — that verdict is Unsupported, and the finding is that the search
-came back empty. It will not tell you a doc set is accurate, either: a
-sample bounds a false-claim rate, and twenty clean draws leave room for one
-claim in six being wrong.
+came back empty. It will not tell you a doc set is accurate either: full
+coverage says every claim was examined, not that the examining was
+infallible.
 
 They will not touch your records. Dated plans, specs, ADRs, RFCs and changelogs are excluded by default. On two real repositories, record documents accounted for 175 of 234 and 117 of 121 of all raw findings — left in, they bury everything that matters.
 
@@ -487,7 +499,7 @@ They are not general prose linters, and neither is a humanizer: pasting a draft 
 
 ## What is in here
 
-`skills/metadiscourse-audit/`, `skills/ai-slop-audit/` and `skills/lie-detector/` are the skills: each `SKILL.md` is the workflow your agent follows, each `references/` file holds the full taxonomy with worked examples and the false-positive families, and each `scripts/scan.py` is the scanner, with its tests beside it. At the repo root, `.claude-plugin/` holds the plugin and marketplace manifests, and `evals/` carries task prompts with planted fixtures plus trigger-eval sets for tuning the skill descriptions — `repo-a` and `repo-b` planted for metadiscourse-audit, `repo-c` for ai-slop-audit, `repo-d` for lie-detector.
+`skills/metadiscourse-audit/`, `skills/ai-slop-audit/` and `skills/lie-detector/` are the skills: each `SKILL.md` is the workflow your agent follows, each `references/` file holds the full taxonomy with worked examples and the false-positive families, and each `scripts/scan.py` is the scanner, with its tests beside it. lie-detector carries a second script, `scripts/ledger.py`, which manages the claim ledger — extraction, hashing, staleness, the backlog and the gate are mechanical and live there; reaching a verdict is the skill's job and does not. At the repo root, `.claude-plugin/` holds the plugin and marketplace manifests, and `evals/` carries task prompts with planted fixtures plus trigger-eval sets for tuning the skill descriptions — `repo-a` and `repo-b` planted for metadiscourse-audit, `repo-c` for ai-slop-audit, `repo-d` for lie-detector.
 
 ## Licence
 

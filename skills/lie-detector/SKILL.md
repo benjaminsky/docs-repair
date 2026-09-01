@@ -1,6 +1,6 @@
 ---
 name: lie-detector
-description: Fact-check documentation by sampling — draw a random, reproducible sample of the factual claims in a README, a docs/ folder, a runbook or the comments in source files, then try to disprove each one against the code, the config and the tests. For when someone asks whether the docs can be trusted, wants the docs fact-checked, spot-checked, audited for accuracy or lies, wants to know how much of a doc set is still true, or wants a documented feature checked against whether it exists. Extracts checkable claims — defaults and limits, flags and paths, guarantees like "never" and "every", version and platform requirements, behaviour on error — and draws n of them by a lottery anyone can recompute from a published seed, so the sample is verifiably not cherry-picked. Each drawn claim gets a falsification test written before the evidence is opened, then a verdict of False, Unsupported, True or Unfalsifiable, and the result is extrapolated to the corpus with a confidence interval rather than reported as "the docs are accurate". Use it for accuracy, drift and trust questions about standing documentation. Not for finding revision debris (metadiscourse-audit) or generation residue and the machine register (ai-slop-audit), not for verifying claims about the outside world that the repository cannot settle, and not for proofreading, changelog generation or rewriting prose.
+description: Check whether documentation is true, and keep it true — verify the factual claims in a README, a docs/ folder, a runbook or the comments in source files against the code, config and tests that settle them. Two modes. The ledger mode enrols every claim in a checked-in file (`docs/.claims.toml`), records each verdict with the file:line evidence that settled it, and re-verifies only what a later commit staled, so a doc set gets a coverage number, a CI gate and per-sentence provenance; `init` grandfathers the existing backlog so day one is green, and offers the AGENTS.md or CLAUDE.md line that tells future sessions to verify their own claims. The sample mode draws a reproducible random sample instead, for a repository you do not own. Use it whenever someone asks whether the docs can be trusted, wants them fact-checked, spot-checked or audited for accuracy, wants to know how much of a doc set is still true, wants a documented feature checked against whether it exists, or wants documentation drift caught in CI. Verdicts are supported, refuted, unsupported and unverifiable; absence of evidence is never a refutation. Not for finding revision debris (metadiscourse-audit) or generation residue and the machine register (ai-slop-audit), not for claims about the outside world a repository cannot settle, and not for proofreading, changelog generation or rewriting prose.
 ---
 
 # Lie detector
@@ -8,229 +8,231 @@ description: Fact-check documentation by sampling — draw a random, reproducibl
 A lie, here, is a claim the tree contradicts. Not a doubtful claim, not an
 aged one, not one you would have phrased differently: a sentence asserting
 something a reader would act on, where the code, the config, the tests or
-the filesystem say otherwise. The other two audits in this family ask what
-documentation *sounds* like. This one asks whether it is **true**, and it
-answers by trying to break claims rather than by trying to confirm them.
+the filesystem say otherwise. The sibling audits ask what documentation
+*sounds* like. This one asks whether it is **true**, and it answers by
+trying to break claims rather than by trying to confirm them.
 
-Two constraints shape the whole method. Checking every claim in a corpus is
-not affordable, and checking the claims that catch your eye is worthless —
-the ones that catch your eye are the ones you already doubt, and a doc set's
-credibility does not rest on the sentences its auditor happened to
-distrust. So the sample is drawn by a lottery, published with its seed, and
-the result is reported as an estimate of the corpus with its uncertainty
-attached.
+Two scripts, and which one you want follows from one question — **do you
+maintain these docs?**
 
-## Step 1 — fix the corpus, then fix the seed, in that order
+| | `scripts/ledger.py` | `scripts/scan.py --sample` |
+| --- | --- | --- |
+| Answers | is every claim true, and what settled it | roughly how wrong is this doc set |
+| Output | a ledger checked into the repo | a report, nothing checked in |
+| Cost | a full pass once, then only what changed | one sample, every time |
+| For | docs you own | a repo you do not own, or a first look |
 
-The draw is worth something only if it could not have been shopped for.
-That is two separate properties, and they are worth separating in the
-report because most audits only ever get the first:
+The rest of this file is the ledger mode. Sampling is at the end.
 
-- **Verifiable** — anyone can recompute the draw and get your sample back.
-  Publishing the seed, the corpus digest and the population size does this,
-  and the scanner prints all three.
-- **Unbiasable** — you could not have tried seeds until the sample looked
-  survivable. Only a seed you did not choose gives you this.
+## Why a ledger, and why it is affordable
 
-So the order matters. Settle the corpus first — which paths, which
-exclusions, at which commit — and only then take the seed. Sources of a
-seed nobody controls, best first:
+Checking every claim on every run is not affordable, which is the argument
+that usually ends in sampling. The way out is not a smaller sample; it is
+**not re-verifying what has not moved**.
 
-- A public value that did not exist when the corpus was fixed: a
-  [drand](https://drand.love) round number, a NIST randomness beacon pulse,
-  a stock index close, a block hash. `--seed drand:4210000`.
-- A string the person who asked for the audit supplies. Their choosing it
-  is the point; you have no way to prepare for it.
-- The corpus's own git HEAD, which the scanner uses when nothing else is
-  given. It is verifiable, and it is honest about being weak: the auditor
-  can commit again to re-roll it. Say so in the report rather than implying
-  a rigour the draw does not have.
+Every verdict is anchored to two hashes, and keeping them apart is what lets
+a verdict have a history:
 
-State in the report which of the two properties you got. An audit that says
-"verifiable, not unbiasable — seed was HEAD" is worth more than one that
-says "randomly sampled" and leaves the reader to guess.
+- **identity** — which claim this is: the file, plus the identifiers it is
+  about. Editing 500 to 100 leaves identity alone, so the entry keeps its
+  audit trail instead of arriving as a stranger.
+- **skeleton** — what it asserts: those identifiers plus the numbers, units,
+  quantifiers and modals. Rewording prose does not move it; changing a
+  value, a unit, or a "never" into a "rarely" does.
 
-## Step 2 — draw
+Plus a hash of the cited evidence itself. A verdict stays live while the
+skeleton and every evidence hash hold; when one moves, that one entry is
+what gets re-verified. The first run is an audit. Every run after it is a
+diff.
 
-The script is `scripts/scan.py` inside this skill's directory. The
-**script** is addressed absolutely — take the path from wherever this
-`SKILL.md` was loaded (under Claude Code as a plugin,
-`"$CLAUDE_PLUGIN_ROOT/skills/lie-detector/scripts/scan.py"`) — while the
-**corpus** arguments resolve against your working directory, so stay in the
-target project's root:
+**Nobody maintains the ledger.** Each run re-derives the claim set from the
+documents and compares: in the docs but not the ledger is a new claim, in
+both with a moved hash is stale, in the ledger but not the docs is an
+orphan. A doc edit cannot escape unnoticed — only be ignored, which is what
+the gate is for.
+
+## Step 1 — enrol, and wire it in
 
 ```bash
-SCAN=/absolute/path/to/skills/lie-detector/scripts/scan.py
-python3 "$SCAN" docs README.md -n 20 --seed drand:4210000
-python3 "$SCAN" docs README.md --json > audit.json   # the manifest, to publish
-python3 "$SCAN" docs src --code -n 20                # comments claim too
-python3 "$SCAN" docs --pool                          # the whole population
-python3 "$SCAN" docs --verify audit.json             # recompute a draw
+LD=/absolute/path/to/skills/lie-detector/scripts/ledger.py
+python3 "$LD" init docs README.md
 ```
 
-What comes back is the sample, a **queue** — the next claims in draw order —
-and the population by class. Twenty is a reasonable draw for a first pass:
-enough to bound the error rate usefully, few enough that every claim gets
-the code opened against it. Sample less than you can actually check; a
-half-checked sample of forty is worse than a checked sample of fifteen,
-because it reports a rate it did not measure.
+Every claim is recorded `unverified` and `exempt`, and **nothing is marked
+supported**. An unverified entry is a claim the ledger knows about, not one
+anybody has an opinion on; recording a verdict nobody established is the
+failure this skill exists to prevent. `init` does do the mechanical half of
+verification — searching the tree for candidate evidence — so the judgement
+is what is left.
 
-The scanner over-extracts on purpose. A sentence in the population is a
-*candidate claim*, and some of them will turn out not to assert anything
-checkable — that is what the queue is for, and step 4 says how to replace
-one without breaking the draw.
+Day one is therefore green, with the whole backlog visible and the gate
+already enforcing on anything new. This is `cargo vet init`'s exemptions and
+ESLint's bulk suppressions, for prose.
 
-`--pool` prints the population. Read it once before drawing on an unfamiliar
-corpus: if the population is mostly navigation and marketing, the corpus is
-not making checkable claims, and that finding — a doc set that asserts
-nothing falsifiable — is worth reporting on its own.
+`init` then reports whether the repository's agent instructions mention the
+ledger, and prints the block to add when they do not. **Read the printed
+block to the user and let them decide.** `--wire` appends it (AGENTS.md when
+both it and CLAUDE.md exist; nothing is created unless `--create`), and the
+`PostToolUse` hook behind `wire --print-hook` is a separate, opt-in offer —
+a line of instruction and a hook that executes on every edit are different
+levels of consent.
 
-## Step 3 — write the disproof test before you look
+That line matters more than it looks: the gate catches an unverified claim
+at merge, which is late. The instruction catches it in the session that
+wrote it, which still has the code open.
 
-For each drawn claim, before opening any file, write down **what evidence
-would make this false**. "The default timeout is 30 seconds" is false if
-the constant is anything but 30, or if no such default exists, or if the
-flag was renamed. Write that first, then go and look.
+## Step 2 — work the backlog
 
-This ordering is the difference between an audit and a reading. Opening the
-code first means finding a way to read the sentence as true — the code
-always offers one, and every claim survives an auditor who starts from the
-answer. Pre-registering the test also produces the sentence the report
-needs: the evidence that settled it, not the impression it left.
+```bash
+python3 "$LD" plan --limit 10
+```
 
-Where to look, by class — the scanner labels each drawn claim with one:
+Claims come back **batched by the evidence they need**, because the cost of
+verifying one is dominated by loading the code that settles it: ten claims
+about one file cost about one file's reading. Within that, ordered by class,
+because a wrong default outranks a wrong adjective.
+
+Ten a sitting is a real pace. It never has to finish — every claim verified
+is one a reader can trust, and the ones behind it are no worse off than they
+were.
+
+## Step 3 — verify, disproof first
+
+For each claim, **before opening the evidence, write down what would make it
+false.** "The default timeout is 30 seconds" is false if the constant is
+anything else, if no such default exists, or if the flag was renamed.
+
+This ordering is the difference between an audit and a reading. Open the
+code first and you will find a way to read the sentence as true — the code
+always offers one. Then look, in the order the class suggests:
 
 | Class | What it claims | Where it is settled |
 | --- | --- | --- |
-| **A** | a number or a default | the constant, the argument parser's default, the config schema |
+| **A** | a number or a default | the constant, the parser's default, the config schema |
 | **B** | an interface: a flag, path, function, env var | the parser, the file's existence, the symbol, the call site |
-| **C** | a guarantee: never, always, every, only, idempotent | the test that would fail if it broke — and its absence is itself the finding |
-| **D** | a dependency, version or platform | the manifest, the lockfile, the CI matrix, the packaging metadata |
-| **E** | behaviour on error: returns, raises, retries, falls back | the handler, the retry loop, the exit path |
-| **F** | something external: a URL, a licence, a standard | the target itself; often not settleable from the tree |
+| **C** | a guarantee: never, always, every, only, idempotent | the path that would violate it — and the test that would catch it |
+| **D** | a dependency, version or platform | the packaging metadata, then the CI matrix |
+| **E** | behaviour on error: returns, raises, retries, falls back | the handler and the retry loop |
+| **F** | something external: a URL, a licence, a standard | the target itself; often unsettleable from the tree |
 
-`references/falsification.md` has the recipes per class, the verdict rules
-for the hard cases, and the families of claim that look false and are not.
-Read it when a verdict is not obvious.
+`references/falsification.md` has the recipes per class and the families of
+claim that look false and are not. Read it when a verdict is not obvious;
+**"your grep was wrong" is the commonest cause of a false Refuted.**
 
-## Step 4 — four verdicts, and one rule about the fourth
-
-| Verdict | Meaning |
-| --- | --- |
-| **False** | The tree contradicts the claim. Quote both sides: the sentence, and the `file:line` that refutes it. |
-| **Unsupported** | Nothing in the tree settles it either way. Not a lie — an unverifiable assertion, which is its own finding when the doc states it flatly. |
-| **True** | The evidence confirms it. Cite the evidence; a True with no citation is an impression, and impressions do not belong in the tally. |
-| **Unfalsifiable** | The sentence asserts nothing checkable ("Relay is designed for reliability"), so no evidence could have settled it. |
-
-**Absence of evidence is Unsupported, never False.** The most damaging thing
-this audit can do is call a claim a lie because the grep missed it. If you
-cannot find the retry loop, the finding is that you could not find it.
-
-**Unfalsifiable claims are replaced from the queue, never by choice.** Take
-the next claim in draw order, and record the swap — "claim 7 unfalsifiable,
-replaced by queue 1" — in the report. Replacing a claim you happened to
-dislike, or one that looked expensive to check, quietly turns the lottery
-back into a hand-picked sample, and nothing in the output would show it.
-Unfalsifiable claims still get counted: a corpus that keeps producing them
-is telling you something about its prose.
-
-The tally is over the claims that could be settled. If four of twenty were
-unfalsifiable, the denominator is sixteen, and the report says so.
-
-## Step 5 — say what a sample means, and no more
-
-A sample bounds a rate; it does not clear a corpus. Nothing false in twenty
-draws is consistent with one claim in eight being wrong — which is a
-different sentence from "the docs are accurate", and the difference is the
-whole reason to sample rather than to spot-check.
+## Step 4 — record, with the evidence
 
 ```bash
-python3 "$SCAN" --interval 2 18    # what 2 lies in 18 checkable draws implies
+python3 "$LD" record verdicts.json --by "$(whoami)"
 ```
 
-Report the observed rate, the interval, and the population it generalises
-to. It generalises to the corpus that was sampled — not to the repository,
-not to files you excluded, and not to the claims the extractor never
-proposed. A stratified draw (`--class A`) generalises only to that class,
-which is worth doing deliberately when someone asks specifically whether
-the numbers in the docs are right.
+```json
+[
+  {"id": "d44c8aea3bbe", "verdict": "refuted",
+   "correction": "Relay retries a failed flush 3 times before parking the batch.",
+   "severity": "high",
+   "evidence": [{"file": "src/relay.py", "lines": "5", "symbol": "MAX_RETRIES",
+                 "quote": "MAX_RETRIES = 3",
+                 "note": "flush() loops range(MAX_RETRIES); no other retry path"}]},
+  {"id": "62992a2b4053", "verdict": "unsupported",
+   "searched": ["journal", "wal", "fsync", "src/**", "tests/**"],
+   "note": "no journal in the tree; the claim may describe a component elsewhere"}
+]
+```
 
-Two findings outrank the rate, and lead the report:
+Four verdicts, and the script enforces what each one owes:
 
-- **A false claim about something load-bearing** — a default, a guarantee,
-  a security-relevant behaviour. One of these is the reason the audit was
-  worth running, whatever the sample rate turned out to be.
-- **A guarantee with no test behind it.** Class C claims that no test would
-  catch breaking are not lies today and are the ones that become lies
-  silently. Report them as unguarded, with the test that should exist.
+| Verdict | Means | `record` requires |
+| --- | --- | --- |
+| **supported** | the evidence entails the claim | evidence whose quote is really at those lines |
+| **refuted** | the evidence contradicts it | evidence, **and the correction** |
+| **unsupported** | nothing in the tree settles it | the list of what was searched |
+| **unverifiable** | no evidence could settle it | nothing — it is a finding about the prose |
 
-## Step 6 — correct, and never quietly
+These are refusals, not suggestions: a `supported` with no evidence is
+rejected, and so is a quote that is not actually at the line it cites. A
+ledger of rubber-stamped verdicts is worse than no ledger, because it
+launders assumption as evidence.
 
-Fixing is by hand — there is no `--fix` here, because every correction
-needs someone to decide what the true statement is. When you correct a
-false claim:
+**Absence of evidence is `unsupported`, never `refuted`.** If you cannot
+find the retry loop, the finding is that you could not find it — record the
+search so a reader can falsify it.
 
-- **Correct it in the text and name it in the report.** Whoever trusted
-  that sentence needs to know it was wrong, not just that it now reads
-  right. A silent correction destroys the only evidence the audit produced.
-- **Fix the claim, not the sentence around it.** If the default is 10 and
-  the doc says 30, the fix is `10` — not a rewrite that removes the number
-  and leaves prose no one can check next time. Vagueness is not accuracy.
-- **When the code is wrong and the doc is right, say that instead.** A
-  disagreement between the two is a finding about the pair, and the doc is
-  sometimes the one recording the intended behaviour. Do not "correct" a
-  doc into matching a bug.
-- **Publish the manifest with the report** (`--json`). It is what lets a
-  reader rerun `--verify` and confirm the sample was not chosen after the
-  fact — the audit's only claim to being more than an opinion.
+**A supported guarantee with no test behind it is still a finding.** Put the
+tests that guard it in `guarded_by`; an empty list means the claim is true
+by accident today and will become false with nobody noticing.
 
-## Report format
+## Step 5 — the gate
+
+```bash
+python3 "$LD" check            # 0 clean · 1 blocking · 2 nothing to check
+python3 "$LD" check --strict   # unsupported blocks too
+```
+
+Blocking: a new claim with no verdict, a stale one, a refuted one, an edited
+claim that has lost its exemption. Advisory: unsupported, unverifiable, and
+an orphan that used to carry a verdict — which means a documented fact was
+deleted or reworded past recognition, and wants a person either way.
+
+The gate is not "docs must be perfect". It is **no claim may go unexamined,
+and no claim may be knowingly false.** A PR that changes a documented
+constant has three honest ways out: fix the doc, re-verify the claim against
+the new code, or mark it refuted with a correction and open an issue. What
+it forecloses is the fourth — changing the code and letting the sentence
+rot.
+
+## Step 6 — report to a person
+
+The ledger is machine state. A person wants the reading of it, so lead with
+what a reader would act on:
 
 ```markdown
-# Lie detector: <corpus> @ <commit>
+# Claim verification: <corpus> @ <commit>
 
-**Draw.** n of P claims. Seed `<seed>` (<source>) — <verifiable | verifiable
-and unbiasable>. Corpus digest `<digest>`. Manifest: `<path>`.
-**Scope.** <paths, exclusions, and what was skipped as a record>
+**Coverage.** N of M claims carry a live verdict. Backlog: K exempt.
+**Result.** N refuted · N unsupported · N supported · N unverifiable.
 
-## False (N)
+## Refuted (N)
 | Claim | Where | Refuted by | Correction |
-| --- | --- | --- | --- |
-| verbatim sentence | `doc.md:12` | `src/relay.py:8` — MAX_RETRIES = 3 | "retries 3 times" |
 
 ## Unsupported (N)
-<claim, where, and what evidence was looked for and not found>
+<claim, where, and what was searched for and not found>
 
 ## Unguarded guarantees (N)
-<class C claims that no test would catch breaking, with the test that should exist>
+<supported class C claims with an empty guarded_by, and the test that should exist>
 
-## True (N)
-<claim, and the file:line that confirmed it>
-
-## Draw integrity
-<unfalsifiable claims and the queue draws that replaced them, in order>
-
-## What the sample implies
-<k false of m checkable; observed rate; 95% interval; the population it
-generalises to and the one it does not>
+## What the numbers mean
+<coverage is not accuracy: it says every claim was examined, not that the
+examining was infallible>
 ```
+
+Coverage is not accuracy. The closest published system with this evidence
+rule (Cascade, 2026) reports 0.88 precision at 0.21 recall — an exhaustive
+pass with a strict evidence rule still misses most real inconsistencies. Say
+"no claim went unexamined", never "the docs are true".
+
+## Sampling, for a repo you do not own
+
+```bash
+python3 skills/lie-detector/scripts/scan.py docs -n 20 --seed drand:4210000
+```
+
+Stateless: it draws n claims by a lottery anyone can recompute from the
+published seed, and the skill verifies those. Use it when you cannot check a
+ledger in, when you want a rate before committing to a ledger, or when the
+question is "how bad is this?" rather than "keep this true". The draw is
+verifiable always, and unbiasable only when the seed came from outside the
+corpus — the output says which you got. Report the result as a rate with its
+interval (`scan.py --interval K N`), never as a verdict on the corpus.
 
 ## Scoping
 
-Sample a **doc set**, not a file — the rate is the output, and a rate over
-one file is a rate over nothing. A single-file request is still worth
-widening: draw across the set, and report the file they asked about first.
+Sample or enrol a **doc set**, not a file. Records — dated plans, specs,
+ADRs, changelogs — are excluded by default: their claims were true of a
+proposal on a date, and disproving them establishes only that the plan
+changed.
 
-This audit composes with its siblings. `metadiscourse-audit` removes what
-revision leaves behind, `ai-slop-audit` removes what generation leaves
-behind, and both can strip a false claim's *wrapper* while leaving the false
-claim standing — "leverages a robust 30-second timeout" becomes "the timeout
-is 30 seconds", which is tidier and still wrong. Run this one last, over the
-cleaned text, and its findings will be about facts rather than register.
-
-Records — dated plans, specs, ADRs, changelogs — are excluded from the draw,
-because their claims were true of a proposal on a date and disproving them
-establishes only that the plan changed. Sample them deliberately
-(`--include-records`) only when someone asks whether a specific record was
-ever implemented, and label that draw as what it is: a check of intent
-against outcome, not an audit of the documentation.
+Run this audit **after** its siblings on a corpus that needs both. A cleanup
+audit will happily strip the wrapper off a false claim — "leverages a robust
+30-second timeout" becomes "the timeout is 30 seconds", tidier and still
+wrong — and verifying cleaned text produces findings about facts rather than
+adjectives.
