@@ -311,6 +311,17 @@ def claim_id(relpath, key, occurrence):
     return _hash(relpath, key, occurrence)[:12]
 
 
+def display_text(text):
+    """The sentence as the ledger stores it: verbatim, rewrapped.
+
+    Emphasis markers are *not* stripped here, though the matching passes
+    strip them. An underscore inside a code span is part of an identifier,
+    and a ledger recording `identitykey()` where the document says
+    `identity_key()` is one nobody can check against the document.
+    """
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def normalise_lines(lines):
     return "\n".join(re.sub(r"\s+", " ", ln).strip() for ln in lines)
 
@@ -364,7 +375,7 @@ def extract(paths, excludes=(), include_records=False, include_code=False,
                 "id": cid,
                 "file": rel,
                 "line": claim["line"],
-                "text": scan.normalise(claim["text"]),
+                "text": display_text(claim["text"]),
                 "identity_hash": _hash(key)[:8],
                 "skeleton_hash": _hash("|".join(skeleton(claim["text"])))[:8],
                 "class": claim["class"],
@@ -434,9 +445,16 @@ CONFIG_NAMES = {"pyproject.toml", "setup.cfg", "setup.py", "package.json",
                 "Cargo.toml", "go.mod", "pom.xml", "build.gradle",
                 "requirements.txt", "tox.ini", ".env.example"}
 
+# What a definition looks like. ":" is deliberately absent: every line of
+# YAML has one, which made CI config look like the definition of everything
+# it mentions.
 DEFINITION = re.compile(
-    r"=|:\s|\bdef\b|\bclass\b|\bconst\b|\blet\b|\bvar\b|\bfn\b"
-    r"|add_argument|addoption|@|\bexport\b")
+    r"=[^=]|\bdef\b|\bclass\b|\bconst\b|\blet\b|\bvar\b|\bfn\b"
+    r"|add_argument|addoption|\bexport\b|^\s*[\w.]+\s*:\s*\S")
+
+# Data and config formats name things without defining them. A workflow that
+# runs `scan.py` is not where `scan.py`'s behaviour is settled.
+DATA_EXT = (".yml", ".yaml", ".json", ".toml", ".cfg", ".ini", ".lock")
 
 MAX_TOKENS = 600
 MAX_HITS_PER_TOKEN = 4
@@ -455,9 +473,16 @@ def searchable_files(root=".", limit=4000):
     return out
 
 
+PROSE_EXT = (".md", ".markdown", ".rst", ".txt")
+
+
 def _token_forms(ident):
     """A backticked `src/relay.py` and a bare MAX_RETRIES search differently."""
     ident = ident.strip("`")
+    if ident.lower().endswith(PROSE_EXT):
+        # A claim about a document is settled by the document, or by whether
+        # it exists — never by CI config happening to name it.
+        return set()
     forms = {ident}
     if ident.endswith("()"):
         forms.add(ident[:-2])
@@ -494,13 +519,27 @@ def find_candidates(entries, root=".", files=None):
         for n, line in enumerate(content.splitlines(), 1):
             if len(line) > 400:
                 continue
+            is_data = rel.lower().endswith(DATA_EXT)
             for m in set(x.lower() for x in probe.findall(line)):
                 if len(hits[m]) < MAX_HITS_PER_TOKEN * 4:
                     hits[m].append((rel, n, line.strip(),
-                                    bool(DEFINITION.search(line))))
+                                    bool(DEFINITION.search(line))
+                                    and not is_data))
+
+    # A file matching many different identifiers is an index — CI config, a
+    # manifest, a table of contents. Its mentions are not evidence, and left
+    # in they become the first candidate for half the corpus, collapsing the
+    # batching into one meaningless group.
+    breadth = defaultdict(set)
+    for token, found in hits.items():
+        for rel, _, _, is_def in found:
+            if not is_def:
+                breadth[rel].add(token)
+    indexes = {rel for rel, toks in breadth.items() if len(toks) >= 6}
 
     out = defaultdict(list)
     for token, found in hits.items():
+        found = [h for h in found if h[3] or h[0] not in indexes]
         found.sort(key=lambda h: (not h[3], h[0], h[1]))   # definitions first
         for cid in token_to_claims[token]:
             for rel, n, text, is_def in found[:MAX_HITS_PER_TOKEN]:
@@ -1020,13 +1059,31 @@ def cmd_record(args):
         print("no verdicts in %s" % args.verdicts, file=sys.stderr)
         return 2
 
-    stamp, revision, applied, failed = _now(), _revision(root), 0, []
+    # A claim can be verified before the ledger has heard of it: fixing a
+    # false sentence writes a new one, and verifying it in the same session
+    # is the whole point. So an id that is in the corpus but not the ledger
+    # is enrolled here rather than rejected — that flow was impossible until
+    # trying the tool on this repository made it obvious.
+    enrolled = None
+    stamp, revision, applied, failed, added = _now(), _revision(root), 0, [], 0
     for item in items:
         cid = item.get("id")
         claim = recorded.get(cid)
         if claim is None:
-            failed.append((cid, "no such claim in the ledger"))
-            continue
+            if enrolled is None:
+                opts = corpus_from(ledger, args)
+                enrolled, _, _ = extract(opts["paths"], opts["excludes"],
+                                         opts["include_records"],
+                                         opts["include_code"], root)
+            fresh = enrolled.get(cid)
+            if fresh is None:
+                failed.append((cid, "no such claim: not in the ledger, and no "
+                                    "sentence in the corpus has that id"))
+                continue
+            claim = dict(fresh)
+            ledger.setdefault("claim", []).append(claim)
+            recorded[cid] = claim
+            added += 1
         try:
             evidence = validate_verdict(item, root)
         except RecordError as exc:
@@ -1060,7 +1117,9 @@ def cmd_record(args):
     ledger["generated_at"] = stamp
     with open(ledger_path, "w", encoding="utf-8") as fh:
         fh.write(dumps(ledger))
-    print("Recorded %d verdict(s) in %s." % (applied, args.ledger))
+    print("Recorded %d verdict(s) in %s%s."
+          % (applied, args.ledger,
+             "; %d claim(s) enrolled on the way" % added if added else ""))
     if failed:
         print("Rejected %d." % len(failed))
     return 1 if failed else 0
@@ -1194,6 +1253,8 @@ def main():
     p_record.add_argument("verdicts", help="JSON file of verdicts")
     p_record.add_argument("--by", default="unknown",
                           help="who or what verified these")
+    p_record.add_argument("paths", nargs="*",
+                          help="corpus, if the ledger does not record one")
     p_record.add_argument("--partial", action="store_true",
                           help="record the valid ones even if some are rejected")
     p_record.set_defaults(func=cmd_record)

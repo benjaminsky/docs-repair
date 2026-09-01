@@ -73,8 +73,9 @@ python3 /tmp/dr/skills/ai-slop-audit/scripts/scan.py docs README.md
 python3 /tmp/dr/skills/lie-detector/scripts/ledger.py init docs README.md
 ```
 
-Each prints its candidates by `file:line`, and its last lines tell you how
-many `--fix` can rewrite mechanically. Other routes — [any agent that reads
+The two cleanup scanners print candidates by `file:line`, ending with how
+many `--fix` can rewrite mechanically; `ledger.py init` enrols the claims it
+finds and prints the backlog, with no `--fix` to offer. Other routes — [any agent that reads
 AGENTS.md](#any-agent-that-reads-agentsmd), [plain skills with no plugin
 machinery](#claude-code), [CI](#no-agent-at-all) — are under
 [Installation](#installation).

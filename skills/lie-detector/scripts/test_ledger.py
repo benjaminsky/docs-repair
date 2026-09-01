@@ -403,6 +403,57 @@ class TestCommandLine(unittest.TestCase):
         with open(os.path.join(root, "AGENTS.md"), encoding="utf-8") as fh:
             self.assertIn("lie-detector", fh.read())
 
+    def test_record_enrols_a_claim_the_ledger_has_not_seen(self):
+        # Fixing a false sentence writes a new one, and verifying it in the
+        # same session is the point. Rejecting it because the ledger predates
+        # it made the commonest flow impossible.
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"))
+        with open(os.path.join(root, "docs", "relay.md"), "a",
+                  encoding="utf-8") as fh:
+            fh.write("\nThe `--retries` flag defaults to 5 attempts.\n")
+        entries, _, _ = ledger.extract([os.path.join(root, "docs")], root=root)
+        cid = next(e["id"] for e in entries.values() if "--retries" in e["text"])
+        path = os.path.join(root, "v.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump([{"id": cid, "verdict": "unsupported",
+                        "searched": ["retries", "src/**"]}], fh)
+        code, out = self.run_cli(root, "record", path, "--by", "test")
+        self.assertEqual(code, 0, out)
+        self.assertIn("enrolled on the way", out)
+        self.assertEqual(self.run_cli(root, "check")[0], 0)
+
+    def test_record_still_rejects_an_id_that_is_nowhere(self):
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"))
+        path = os.path.join(root, "v.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump([{"id": "deadbeefcafe", "verdict": "unverifiable"}], fh)
+        code, out = self.run_cli(root, "record", path)
+        self.assertEqual(code, 1, out)
+
+    def test_the_stored_text_keeps_identifiers_intact(self):
+        # scan's matching passes strip emphasis markers; the ledger must not,
+        # or it records `identitykey()` where the document says
+        # `identity_key()` and nobody can check one against the other.
+        root = tree(doc="# R\n\nThe `parse_row()` helper reads `my_file.md` "
+                        "and *always* returns 3 rows.\n")
+        entry = list(entries_of(root).values())[0]
+        self.assertIn("`parse_row()`", entry["text"])
+        self.assertIn("`my_file.md`", entry["text"])
+        self.assertIn("*always*", entry["text"])
+
+    def test_config_files_are_not_treated_as_definitions(self):
+        # A workflow that runs scan.py is not where scan.py is defined, and
+        # letting it count made CI config the first candidate for half a
+        # corpus.
+        root = tree(extra={"ci.yml": "steps:\n  - run: python3 src/relay.py\n"})
+        cands = ledger.find_candidates(entries_of(root), root)
+        for hits in cands.values():
+            for hit in hits:
+                self.assertNotEqual(hit["file"], "ci.yml",
+                                    "config mention offered as evidence")
+
     def test_check_backlog_lists_unverified_claims(self):
         root = tree()
         self.run_cli(root, "init", os.path.join(root, "docs"))
