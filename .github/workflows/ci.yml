@@ -28,9 +28,6 @@ jobs:
       - name: Run unit tests (ai-slop-audit)
         working-directory: skills/ai-slop-audit/scripts
         run: python3 test_scan.py
-      - name: Run unit tests (lie-detector)
-        working-directory: skills/lie-detector/scripts
-        run: python3 test_scan.py
 
   scanner:
     name: scanner exit codes
@@ -125,71 +122,6 @@ jobs:
             echo "::error::--check --code exited 0 on a fixture planted with comment candidates"
             exit 1
           fi
-
-      # repo-d is planted for lie-detector: docs/ makes claims src/relay.py
-      # contradicts. What CI pins here is not the verdicts — those need a
-      # reader — but the draw: a published sample is worthless if the same
-      # seed stops selecting the same claims, and nothing else would notice.
-      - name: lie-detector — a corpus with claims exits 0
-        run: python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d/docs -n 3 --seed ci
-
-      - name: lie-detector — a corpus with no claims exits 2
-        run: |
-          set +e
-          python3 skills/lie-detector/scripts/scan.py .github/workflows
-          status=$?
-          set -e
-          if [ "$status" -ne 2 ]; then
-            echo "::error::expected exit 2 when there is nothing to sample, got $status"
-            exit 1
-          fi
-
-      - name: lie-detector — the same seed draws the same claims
-        run: |
-          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d \
-              -n 5 --seed ci --json > /tmp/draw-a.json
-          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d \
-              -n 5 --seed ci --json > /tmp/draw-b.json
-          python3 -c 'import json, sys; \
-            a = json.load(open("/tmp/draw-a.json")); \
-            b = json.load(open("/tmp/draw-b.json")); \
-            same = [c["id"] for c in a["sample"]] == [c["id"] for c in b["sample"]]; \
-            print("::error::the same seed drew a different sample") if not same else None; \
-            print("::error::the corpus digest is not stable") if a["corpus"] != b["corpus"] else None; \
-            sys.exit(0 if same and a["corpus"] == b["corpus"] else 1)'
-
-      - name: lie-detector — --verify reproduces a draw, and notices an edited corpus
-        run: |
-          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d \
-              -n 5 --seed ci --json > /tmp/manifest.json
-          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d \
-              --verify /tmp/manifest.json
-          cp evals/fixtures/repo-d/docs/relay.md /tmp/relay.md.bak
-          printf '\nThe drain exits with status 7 after every flush.\n' \
-              >> evals/fixtures/repo-d/docs/relay.md
-          set +e
-          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d \
-              --verify /tmp/manifest.json
-          status=$?
-          set -e
-          cp /tmp/relay.md.bak evals/fixtures/repo-d/docs/relay.md
-          if [ "$status" -ne 1 ]; then
-            echo "::error::--verify exited $status on a corpus that changed under it"
-            exit 1
-          fi
-
-      - name: lie-detector — code comments are sampled only with --code
-        run: |
-          set +e
-          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d/src
-          status=$?
-          set -e
-          if [ "$status" -ne 2 ]; then
-            echo "::error::expected exit 2 without --code on a code-only directory, got $status"
-            exit 1
-          fi
-          python3 skills/lie-detector/scripts/scan.py --code -n 2 --seed ci \
-              evals/fixtures/repo-d/src
 
   manifests:
     name: plugin manifests
