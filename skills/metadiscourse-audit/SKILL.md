@@ -1,6 +1,6 @@
 ---
 name: metadiscourse-audit
-description: Clean up, tighten or de-cruft existing prose docs — a README, a docs/ folder, a design doc, the comments in source files — by stripping out metadiscourse, meaning text whose subject is the document, its author or its reader rather than the thing it documents. Targets what revision leaves behind — changelogs written into prose ("previously X, now Y"), a document arguing with its own earlier drafts, dated status stamps, caveats buried mid-paragraph that belong in a footnote — plus staging tics like announcing how many bullets follow, "it's worth noting", headings that argue instead of naming, and the same superlative claimed in four different files. Returns a file:line inventory with cut/fold/move/keep verdicts and a concrete rewrite for each, and can apply the safe subset. Use it whenever docs are called bloated, padded, repetitive or exhausting, whenever they read like a changelog or carry "how we got here" that belongs in git, whenever someone wants docs to stand alone in the present tense, whenever they want the findings list before any edits, and whenever they ask for a documentation style guide — the audit is what the guidance should be built from. Not for scrubbing AI writing voice out of freshly generated text, finding docs stale relative to code, generating changelogs or release notes, reconciling contradictory content, translating, proofreading, or cleaning up code itself — comments are in scope, the code around them is not.
+description: Clean up, tighten or de-cruft existing prose docs — a README, a docs/ folder, a design doc, the comments in source files — by stripping out metadiscourse, meaning text whose subject is the document, its author or its reader rather than the thing it documents. Targets what revision leaves behind — changelogs written into prose ("previously X, now Y"), a document arguing with its own earlier drafts, dated status stamps, caveats buried mid-paragraph that belong in a footnote — plus staging tics like announcing how many bullets follow, "it's worth noting", headings that argue instead of naming, and the same superlative claimed in four different files. Returns a file:line inventory with cut/fold/move/keep verdicts and a concrete rewrite for each, and can apply the safe subset. Use it whenever docs are called bloated, padded, repetitive or exhausting, whenever they read like a changelog or carry "how we got here" that belongs in git, whenever someone wants docs to stand alone in the present tense, whenever they want the findings list before any edits, and whenever they ask for a documentation style guide — the audit is what the guidance should be built from. Leaves verification provenance alone — claim anchors, evidence citations and "how this was checked" footnotes are protected, because their subject is whether a sentence is true rather than how the document was written. Not for scrubbing AI writing voice out of freshly generated text, finding docs stale relative to code, generating changelogs or release notes, reconciling contradictory content, translating, proofreading, or cleaning up code itself — comments are in scope, the code around them is not.
 ---
 
 # Metadiscourse audit
@@ -69,6 +69,36 @@ tutorial or quickstart walks the reader by contract — "let's", "now that
 we've" are its voice, not cruft — so reader-address findings in
 tutorial-shaped files are Keep. The scanner already skips paths that look
 like one; apply the same judgement to files it can't recognise by name.
+
+### Verification provenance is protected
+
+One kind of metadiscourse is content, and the definition has to bend around
+it: text recording **how a claim was verified**. A claim anchor in a
+sentence, its footnote (`[^c4e23315]: supported · 2026-09-01 ·
+src/relay.py:3`), an evidence citation, a "last checked" stamp against a
+specific claim — the subject of all of these is the document, which is what
+this audit removes, and every one of them is load-bearing anyway.
+
+The distinction that makes it coherent: ordinary metadiscourse tells the
+reader about the *document's history or shape* — how it was revised, how
+many bullets follow, what the author thinks is worth noting. Provenance
+tells them whether a sentence is **true, and how anyone knows**. The first
+is staging. The second is the only fact about a document that a reader
+cannot get from reading it.
+
+So it is a projection, not an event: it lives on "current", it is refreshed
+when the claim is re-verified, and it belongs in the standing document
+rather than in git history. Treat it exactly as step 1 treats a declared
+convention — **Keep**, and say in the report that it was protected.
+
+Two things this does not license. A dated stamp about the *document*
+("Status 2026-05-02: this page is up to date") is still class 0c; provenance
+attaches to a claim, not to a page. And the note has to be current — a
+verification footnote whose evidence has moved is worse than none, which is
+`lie-detector`'s job to detect, not this audit's to tidy away.
+
+The scanner skips anchors and their definitions, so they will not appear as
+candidates. If you find provenance the scanner missed, it is Keep.
 
 ## Step 2 — events or projection, never both
 

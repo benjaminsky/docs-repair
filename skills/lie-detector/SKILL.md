@@ -1,6 +1,6 @@
 ---
 name: lie-detector
-description: Check whether documentation is true, and keep it true — verify the factual claims in a README, a docs/ folder, a runbook or the comments in source files against the code, config and tests that settle them. Two modes. The ledger mode enrols every claim in a checked-in file (`docs/.claims.toml`), records each verdict with the file:line evidence that settled it, and re-verifies only what a later commit staled, so a doc set gets a coverage number, a CI gate and per-sentence provenance; `init` grandfathers the existing backlog so day one is green, and offers the AGENTS.md or CLAUDE.md line that tells future sessions to verify their own claims. The sample mode draws a reproducible random sample instead, for a repository you do not own. Use it whenever someone asks whether the docs can be trusted, wants them fact-checked, spot-checked or audited for accuracy, wants to know how much of a doc set is still true, wants a documented feature checked against whether it exists, or wants documentation drift caught in CI. Verdicts are supported, refuted, unsupported and unverifiable; absence of evidence is never a refutation. Not for finding revision debris (metadiscourse-audit) or generation residue and the machine register (ai-slop-audit), not for claims about the outside world a repository cannot settle, and not for proofreading, changelog generation or rewriting prose.
+description: Check whether documentation is true, and keep it true — verify the factual claims in a README, a docs/ folder, a runbook or the comments in source files against the code, config and tests that settle them. Two modes. The ledger mode enrols every claim in a sidecar beside each document (`README.claims.toml` next to `README.md`), optionally anchoring each sentence to its entry with a markdown footnote so a rewrite keeps its verdict, records each verdict with the file:line evidence that settled it, and re-verifies only what a later commit staled, so a doc set gets a coverage number, a CI gate and per-sentence provenance; `init` grandfathers the existing backlog so day one is green, and offers the AGENTS.md or CLAUDE.md line that tells future sessions to verify their own claims. The sample mode draws a reproducible random sample instead, for a repository you do not own. Use it whenever someone asks whether the docs can be trusted, wants them fact-checked, spot-checked or audited for accuracy, wants to know how much of a doc set is still true, wants a documented feature checked against whether it exists, or wants documentation drift caught in CI. Verdicts are supported, refuted, unsupported and unverifiable; absence of evidence is never a refutation. Not for finding revision debris (metadiscourse-audit) or generation residue and the machine register (ai-slop-audit), not for claims about the outside world a repository cannot settle, and not for proofreading, changelog generation or rewriting prose.
 ---
 
 # Lie detector
@@ -55,8 +55,14 @@ the gate is for.
 
 ```bash
 LD=/absolute/path/to/skills/lie-detector/scripts/ledger.py
-python3 "$LD" init docs README.md
+python3 "$LD" init docs README.md --anchor
 ```
+
+Enrolling writes a **sidecar beside each document** — `README.claims.toml`
+next to `README.md` — so the metadata lives with the prose making the claims,
+each file stays small enough to review, and a docs PR touches only the
+sidecars for the documents it changed. A sidecar names its own document, so
+nothing afterwards needs to be told the corpus.
 
 Every claim is recorded `unverified` and `exempt`, and **nothing is marked
 supported**. An unverified entry is a claim the ledger knows about, not one
@@ -68,6 +74,27 @@ is what is left.
 Day one is therefore green, with the whole backlog visible and the gate
 already enforcing on anything new. This is `cargo vet init`'s exemptions and
 ESLint's bulk suppressions, for prose.
+
+`--anchor` writes each claim's id into the document as a markdown footnote
+and maintains the definitions at the end of the file:
+
+```markdown
+The `--batch-size` flag defaults to 500 events per flush.[^c4e233156]
+
+[^c4e233156]: supported · 2026-09-01 · src/relay.py:3
+```
+
+**Anchor when you can.** A derived id is computed from the identifiers a
+sentence names, and about a third of claims in a real corpus name none — a
+rewrite orphans those and their verdict is lost. An anchored claim can be
+reworded freely; the verdict follows the marker, and only a change to what
+the sentence *asserts* stales it. An anchored sentence also stays a claim
+even if a rewrite leaves it matching no class, because the marker is the
+author saying it is tracked.
+
+Those footnotes are provenance, not staging. Both sibling audits protect
+them explicitly — `metadiscourse-audit`'s step 1 says why — so they are not
+something a later cleanup pass will strip.
 
 `init` then reports whether the repository's agent instructions mention the
 ledger, and prints the block to add when they do not. **Read the printed
@@ -91,15 +118,15 @@ other view is the same comparison presented differently, so it is a flag on
 `check` rather than a command of its own:
 
 ```bash
-ledger.py init docs README.md    # once per repo; --wire, --print-hook
-ledger.py check                  # the gate; --backlog, --prune, --strict
+ledger.py init docs README.md    # once per repo; --anchor, --wire, --print-hook
+ledger.py check                  # the gate; --backlog, --relocate, --prune
 ledger.py record verdicts.json   # citations required
-ledger.py show docs/relay.md:16  # provenance for one sentence
+ledger.py show docs/relay.md:16  # provenance for one sentence, or c4e233156
 ```
 
-`check` takes no corpus options: `init` recorded them, and a gate that has
-to be re-told how to walk the corpus is one that eventually gets mis-invoked
-in CI, silently checking less than it reports.
+`check` takes no corpus at all: the sidecars name their own documents, and a
+gate that has to be told what to check is one that eventually gets
+mis-invoked in CI, silently checking less than it reports.
 
 ## Step 2 — work the backlog
 
@@ -184,10 +211,17 @@ by accident today and will become false with nobody noticing.
 ## Step 5 — the gate
 
 ```bash
-python3 "$LD" check            # 0 clean · 1 blocking · 2 nothing to check
-python3 "$LD" check --strict   # unsupported blocks too
-python3 "$LD" check --prune    # drop entries whose sentence is gone
+python3 "$LD" check             # 0 clean · 1 blocking · 2 nothing to check
+python3 "$LD" check --strict    # unsupported blocks too
+python3 "$LD" check --relocate  # re-address citations whose quote is intact
+python3 "$LD" check --prune     # drop entries whose sentence is gone
 ```
+
+`--relocate` is the one to reach for when a refactor moves code that claims
+cite. Editing a file above a citation moves every line below it and changes
+nothing about the evidence, so re-addressing is bookkeeping — it touches line
+numbers and hashes, never a verdict. When the quote is *gone* rather than
+moved, the evidence really changed and the claim goes back to a person.
 
 Blocking: a new claim with no verdict, a stale one, a refuted one, an edited
 claim that has lost its exemption. Advisory: unsupported, unverifiable, and

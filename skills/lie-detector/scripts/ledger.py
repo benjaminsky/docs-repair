@@ -38,7 +38,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import scan  # noqa: E402  — extraction is shared with the sampling mode
 
 SCHEMA = 1
-DEFAULT_LEDGER = os.path.join("docs", ".claims.toml")
+DEFAULT_LEDGER = "*.claims.toml"
 
 VERDICTS = ("unverified", "supported", "refuted", "unsupported", "unverifiable")
 NEEDS_EVIDENCE = ("supported", "refuted")
@@ -171,7 +171,7 @@ def _dump_value(v):
     return '"' + s + '"'
 
 
-CLAIM_KEY_ORDER = ("id", "file", "line", "text", "identity_hash",
+CLAIM_KEY_ORDER = ("id", "line", "text", "anchored",
                    "skeleton_hash", "class", "verdict", "exempt", "severity",
                    "correction", "note", "searched", "guarded_by",
                    "supersedes", "verified_at", "verified_by", "revision")
@@ -200,7 +200,7 @@ def dumps(ledger):
     out = ["# Written by lie-detector. One entry per factual claim, with the",
            "# evidence that settled it. Re-check with: ledger.py check",
            "schema = %d" % ledger.get("schema", SCHEMA),
-           "corpus = %s" % _dump_value(ledger.get("corpus", [])),
+           "doc = %s" % _dump_value(ledger.get("doc", "")),
            "generated_at = %s" % _dump_value(ledger.get("generated_at", ""))]
     for key in ("revision", "code", "include_records", "exclude"):
         if ledger.get(key):
@@ -234,6 +234,14 @@ def dumps(ledger):
 # The pairing is the answer to the obvious objection to hashing prose — that
 # a typo fix would invalidate a verdict somebody spent real attention on.
 # ---------------------------------------------------------------------------
+
+# A claim may carry its own id in the document, as a markdown footnote
+# reference at the end of the sentence: "…defaults to 500 events.[^c4e23315]"
+# An anchored claim can be reworded freely and keep its verdict, which the
+# derived key cannot promise — a third of the claims in a real corpus name no
+# identifier at all, and those are keyed on their opening words.
+ANCHOR = re.compile(r"\[\^c([0-9a-f]{8})\]")
+ANCHOR_DEF = re.compile(r"^\[\^c([0-9a-f]{8})\]:\s*(.*)$")
 
 _UNIT = scan.UNIT
 
@@ -308,7 +316,10 @@ def _hash(*parts):
 
 
 def claim_id(relpath, key, occurrence):
-    return _hash(relpath, key, occurrence)[:12]
+    # Eight hex digits, because the id is also the footnote marker a reader
+    # sees in the prose: [^c4e233156]. Long enough that two claims in a
+    # corpus will not collide, short enough not to shout.
+    return _hash(relpath, key, occurrence)[:8]
 
 
 def display_text(text):
@@ -365,22 +376,71 @@ def extract(paths, excludes=(), include_records=False, include_code=False,
     for path in files:
         rel = os.path.relpath(path, root) if root != "." else path
         rel = rel.replace(os.sep, "/")
-        found, _ = scan.claims_in(path, rel=rel)
+        if rel.startswith("./"):
+            # A sidecar names its document as "CLAUDE.md"; a walk from "."
+            # hands back "./CLAUDE.md", and the two must be the same key.
+            rel = rel[2:]
+        found, _ = scan.claims_in(path, rel=rel,
+                                  include=ANCHOR.search)
         for claim in found:
-            key = identity_key(claim["text"])
-            occurrence = seen[(rel, key)]
-            seen[(rel, key)] += 1
-            cid = claim_id(rel, key, occurrence)
+            raw = claim["text"]
+            # An anchor inside a code span is an example of one — this
+            # repository's own docs show `[^c4e233156]` while explaining the
+            # scheme — and reading it as an id would hand two sentences the
+            # same claim.
+            outside = scan.INLINE_CODE.sub(lambda m: " " * len(m.group(0)), raw)
+            spans = [m.span() for m in ANCHOR.finditer(outside)]
+            anchored = ANCHOR.search(outside)
+            # Remove only the real markers. A quoted one is part of the
+            # sentence — the docs explaining the scheme contain both.
+            text = raw
+            for a, b in reversed(spans):
+                text = text[:a] + text[b:]
+            text = text.strip()
+            if anchored:
+                # The document names its own claim. Reword the sentence
+                # however you like; the verdict follows the anchor.
+                cid = anchored.group(1)
+            else:
+                key = identity_key(text)
+                occurrence = seen[(rel, key)]
+                seen[(rel, key)] += 1
+                cid = claim_id(rel, key, occurrence)
+            claim = dict(claim, text=text)
             entries[cid] = {
                 "id": cid,
                 "file": rel,
                 "line": claim["line"],
                 "text": display_text(claim["text"]),
-                "identity_hash": _hash(key)[:8],
+                "anchored": bool(anchored),
                 "skeleton_hash": _hash("|".join(skeleton(claim["text"])))[:8],
                 "class": claim["class"],
             }
     return entries, files, records
+
+
+SIDECAR_SUFFIX = ".claims.toml"
+
+
+def sidecar_for(doc):
+    """README.md -> README.claims.toml, beside the document making the claims."""
+    base, _ = os.path.splitext(doc)
+    return base + SIDECAR_SUFFIX
+
+
+def find_sidecars(root="."):
+    """Every sidecar under root, in a stable order.
+
+    Sidecars are self-describing — each names the document it covers — so
+    `check` needs no corpus argument and no central index to find its work.
+    """
+    out = []
+    for base, dirs, names in os.walk(root):
+        dirs[:] = sorted(d for d in dirs if d not in scan.SKIP_DIRS)
+        for name in sorted(names):
+            if name.endswith(SIDECAR_SUFFIX):
+                out.append(os.path.relpath(os.path.join(base, name), root))
+    return out
 
 
 def load_ledger(path):
@@ -404,6 +464,34 @@ def evidence_moved(claim, root="."):
     return moved
 
 
+def relocate_evidence(ev, root="."):
+    """Where the cited quote lives now, or None if it is really gone.
+
+    Editing a file above a citation moves every line number below it while
+    changing nothing about the evidence. That is bookkeeping, not a stale
+    verdict — but only when the quote is still there verbatim. If it is not,
+    the evidence changed and a person has to look again.
+    """
+    path = os.path.join(root, ev["file"])
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+    except (OSError, UnicodeDecodeError):
+        return None
+    want = re.sub(r"\s+", " ", ev.get("quote", "")).strip()
+    if not want:
+        return None
+    span = 1
+    if "-" in str(ev.get("lines", "")):
+        a, b = str(ev["lines"]).split("-")
+        span = max(1, int(b) - int(a) + 1)
+    for i in range(0, max(0, len(lines) - span + 1)):
+        window = normalise_lines(lines[i:i + span]).replace("\n", " ")
+        if want in re.sub(r"\s+", " ", window):
+            return str(i + 1) if span == 1 else "%d-%d" % (i + 1, i + span)
+    return None
+
+
 def compare(entries, ledger, root="."):
     """The four outcomes: new, stale, orphan, live.
 
@@ -422,8 +510,13 @@ def compare(entries, ledger, root="."):
         if prior.get("skeleton_hash") != entry["skeleton_hash"]:
             reasons.append("claim edited")
         for ev, now in evidence_moved(prior, root):
-            reasons.append("evidence moved: %s:%s" % (ev["file"],
-                                                      ev.get("lines", "?")))
+            where = relocate_evidence(ev, root)
+            if where:
+                reasons.append("evidence at %s moved to :%s (quote unchanged)"
+                               % (ev["file"], where))
+            else:
+                reasons.append("evidence changed: %s:%s" % (ev["file"],
+                                                            ev.get("lines", "?")))
         if reasons and prior.get("verdict") != "unverified":
             stale.append((entry, prior, reasons))
         elif reasons:
@@ -572,8 +665,8 @@ AGENT_FILES = ("AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md",
 
 BLOCK = """## Documentation claims
 
-`{ledger}` is a ledger of every factual claim in {corpus}, with the evidence
-that settled each one.
+Every factual claim in {corpus} is recorded in a sidecar beside the document
+that makes it (`{ledger}`), with the evidence that settled each one.
 
 After editing those docs, or changing a default, flag, path or guarantee they
 describe, run `lie-detector check`. Verify whatever it reports as new or
@@ -610,14 +703,14 @@ def agent_files_present(root="."):
     return present
 
 
-def wiring_reference(root=".", ledger_path=DEFAULT_LEDGER):
+def wiring_reference(root=".", ledger_path=SIDECAR_SUFFIX):
     """Where the ledger is already mentioned, as (file, lineno), or None.
 
     Deliberately coarse: any mention of the tool or the ledger's own filename
     counts. A repository that names either has made a decision, and asking
     again on every init is how a tool teaches people to ignore it.
     """
-    needles = ("lie-detector", os.path.basename(ledger_path))
+    needles = ("lie-detector", SIDECAR_SUFFIX)
     for rel in agent_files_present(root):
         try:
             with open(os.path.join(root, rel), encoding="utf-8") as fh:
@@ -648,6 +741,107 @@ def block_for(ledger_path, corpus):
 # ---------------------------------------------------------------------------
 
 
+ANCHOR_HEADER = "<!-- claim anchors: written by lie-detector -->"
+
+
+def anchor_id(cid):
+    return "c" + cid
+
+
+def _definition(claim):
+    """The footnote a reader sees: what settled this sentence, and when."""
+    verdict = claim.get("verdict", "unverified")
+    if verdict == "unverified":
+        return "not yet verified"
+    where = ", ".join("%s:%s" % (e["file"], e["lines"])
+                      for e in claim.get("evidence", [])[:2])
+    when = (claim.get("verified_at") or "")[:10]
+    parts = [verdict]
+    if when:
+        parts.append(when)
+    if where:
+        parts.append(where)
+    return " · ".join(parts)
+
+
+def sync_anchors(doc_path, claims, root="."):
+    """Put each claim's marker on its sentence, and refresh the footnotes.
+
+    Markers are appended to the sentence the claim was extracted from, and
+    the definitions are collected in one block at the end of the document,
+    where markdown renders them as footnotes. Idempotent: a sentence that
+    already carries its marker is left alone.
+    """
+    full = os.path.join(root, doc_path)
+    with open(full, encoding="utf-8") as fh:
+        lines = fh.read().splitlines()
+
+    by_line = {}
+    for claim in claims:
+        by_line.setdefault(int(claim["line"]), []).append(claim)
+
+    # Trim any previous block first, so definitions are rewritten rather than
+    # accumulated — an append-only footnote list is its own kind of rot.
+    end = len(lines)
+    for n, line in enumerate(lines):
+        if line.strip() == ANCHOR_HEADER:
+            end = n
+            break
+    body = lines[:end]
+
+    added = 0
+    joined = "\n".join(body)
+    for n, claims_here in sorted(by_line.items()):
+        for claim in claims_here:
+            marker = "[^%s]" % anchor_id(claim["id"])
+            if marker in joined:
+                continue
+            # Anchor on the claim's own sentence, not the next one: match the
+            # tail of its text in the document, allowing for the soft wraps
+            # the extractor joined over, and insert after the match.
+            tail = claim["text"].strip()[-40:]
+            probe = re.compile(r"\s+".join(re.escape(w) for w in tail.split()))
+            placed = False
+            for j in range(max(0, n - 1), min(len(body), n + 8)):
+                window = "\n".join(body[j:j + 3])
+                m = probe.search(window)
+                if not m:
+                    continue
+                upto = window[:m.end()]
+                line_off = upto.count("\n")
+                col = len(upto) - (upto.rfind("\n") + 1)
+                body[j + line_off] = (body[j + line_off][:col] + marker
+                                      + body[j + line_off][col:])
+                joined = "\n".join(body)
+                added += 1
+                placed = True
+                break
+            if not placed and n - 1 < len(body) \
+                    and body[n - 1].lstrip().startswith("|"):
+                row = body[n - 1].rstrip()
+                if row.endswith("|"):
+                    body[n - 1] = row[:-1].rstrip() + marker + " |"
+                else:
+                    body[n - 1] = row + marker
+                joined = "\n".join(body)
+                added += 1
+                placed = True
+            if not placed:
+                print("  could not anchor %s (%s:%s) — sentence not found "
+                      "where the ledger says it is"
+                      % (anchor_id(claim["id"]), doc_path, n), file=sys.stderr)
+
+    defs = [ANCHOR_HEADER, ""]
+    for claim in sorted(claims, key=lambda c: int(c["line"])):
+        defs.append("[^%s]: %s" % (anchor_id(claim["id"]), _definition(claim)))
+    while body and not body[-1].strip():
+        body.pop()
+    out = body + [""] + defs + [""]
+    with open(full, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(out))
+    return added
+
+
 def _now():
     # utcnow() is deprecated from 3.12; this form works from 3.8 up.
     return datetime.datetime.now(datetime.timezone.utc).strftime(
@@ -665,18 +859,19 @@ def _revision(root="."):
 
 
 def cmd_init(args):
+    """Enrol every claim, writing one sidecar per document.
+
+    A sidecar sits beside the document it covers — README.claims.toml next to
+    README.md — so the metadata lives with the prose making the claims, each
+    file stays reviewable, and a docs PR touches only the sidecars for the
+    documents it changed.
+    """
     root = args.root
-    ledger_path = os.path.join(root, args.ledger)
     if args.print_hook:
         print(HOOK)
         return 0
-    if os.path.exists(ledger_path) and not args.force:
-        if args.wire:
-            return cmd_wire_only(args)
-        print("%s already exists — use `check` to see what moved, `init --wire` "
-              "to add the agent-instructions block, or --force to re-enrol."
-              % args.ledger, file=sys.stderr)
-        return 2
+    if args.wire and not args.paths:
+        return cmd_wire_only(args)
 
     entries, files, records = extract(args.paths, args.exclude,
                                       args.include_records, args.code, root)
@@ -684,31 +879,43 @@ def cmd_init(args):
         print("no claims found in %d file(s)" % len(files), file=sys.stderr)
         return 2
 
+    existing = [f for f in files
+                if os.path.exists(os.path.join(root, sidecar_for(
+                    os.path.relpath(f, root) if root != "." else f)))]
+    if existing and not args.force:
+        print("sidecars already exist for %d document(s) — use `check` to see "
+              "what moved, `init --wire` for the agent block, or --force to "
+              "re-enrol." % len(existing), file=sys.stderr)
+        return 2
+
     candidates = {} if args.no_candidates else find_candidates(entries, root)
     stamp, revision = _now(), _revision(root)
+    by_doc = defaultdict(list)
     for cid, entry in entries.items():
         entry.update({"verdict": "unverified", "exempt": True,
                       "note": "grandfathered by init on %s" % stamp[:10]})
         if candidates.get(cid):
             entry["evidence_candidate"] = candidates[cid]
+        by_doc[entry["file"]].append(entry)
 
-    ledger = {"schema": SCHEMA, "corpus": list(args.paths),
-              "generated_at": stamp, "claim": list(entries.values())}
-    if revision:
-        ledger["revision"] = revision
-    # Recorded so later runs inherit them: a gate that has to be re-told how
-    # to walk the corpus is a gate somebody eventually mis-invokes.
-    if args.code:
-        ledger["code"] = True
-    if args.include_records:
-        ledger["include_records"] = True
-    if args.exclude:
-        ledger["exclude"] = list(args.exclude)
-    parent = os.path.dirname(ledger_path)
-    if parent and not os.path.isdir(parent):
-        os.makedirs(parent)
-    with open(ledger_path, "w", encoding="utf-8") as fh:
-        fh.write(dumps(ledger))
+    written = []
+    for doc, claims in sorted(by_doc.items()):
+        for claim in claims:
+            claim.pop("file", None)
+        led = {"schema": SCHEMA, "doc": doc, "generated_at": stamp,
+               "claim": claims}
+        if revision:
+            led["revision"] = revision
+        if args.code:
+            led["code"] = True
+        if args.include_records:
+            led["include_records"] = True
+        if args.exclude:
+            led["exclude"] = list(args.exclude)
+        path = os.path.join(root, sidecar_for(doc))
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(dumps(led))
+        written.append((sidecar_for(doc), len(claims)))
 
     with_candidates = sum(1 for cid in entries if candidates.get(cid))
     print("Extracting claims from %d file(s)...\n" % len(files))
@@ -716,11 +923,22 @@ def cmd_init(args):
     print("  %4d with evidence candidates found mechanically" % with_candidates)
     print("  %4d with no candidate — these need a human to say what would "
           "settle them" % (len(entries) - with_candidates))
-    print("\nWrote %s — %d entries, all `unverified`, all `exempt`."
-          % (args.ledger, len(entries)))
+    print("")
+    for path, n in written:
+        print("  wrote %-40s %3d claims" % (path, n))
     if records:
-        print("Skipped %d record(s) — dated plans, specs, ADRs, changelogs."
+        print("\nSkipped %d record(s) — dated plans, specs, ADRs, changelogs."
               % len(records))
+
+    if args.anchor:
+        total = 0
+        for doc, claims in sorted(by_doc.items()):
+            total += sync_anchors(doc, claims, root)
+        print("\nAnchored %d sentence(s): each carries its claim id as a "
+              "markdown footnote, so a reworded sentence keeps its verdict."
+              % total)
+        print("Re-run `check` — anchoring edits the documents, which moves "
+              "the claims it just wrote.")
 
     by_class = defaultdict(int)
     for entry in entries.values():
@@ -735,19 +953,19 @@ def cmd_init(args):
     print("\nNext:  ledger.py check --backlog")
     print("Gate:  ledger.py check   (passes today: every claim is exempt)")
 
-    _report_wiring(args, root, ledger_path)
+    _report_wiring(args, root, written[0][0] if written else "*.claims.toml")
     return 0
 
 
 def _report_wiring(args, root, ledger_path):
-    found = wiring_reference(root, args.ledger)
+    found = wiring_reference(root)
     if found:
         print("\nAgent instructions already reference the ledger — %s:%d."
               % found)
         return
     present = agent_files_present(root)
     target = wiring_target(root)
-    block = block_for(args.ledger, args.paths)
+    block = block_for(ledger_path, args.paths)
     print("")
     if present:
         if len(present) == 1:
@@ -802,6 +1020,34 @@ def apply_wiring(root, target, block, create=False):
     return 0
 
 
+def load_all(root="."):
+    """Every sidecar under root as (path, ledger, doc, claims-by-id)."""
+    out = []
+    for rel in find_sidecars(root):
+        try:
+            led = load_ledger(os.path.join(root, rel))
+        except (OSError, ValueError) as exc:
+            print("skipped %s: %s" % (rel, exc), file=sys.stderr)
+            continue
+        doc = led.get("doc")
+        if not doc:
+            continue
+        claims = {}
+        for c in led.get("claim", []):
+            c.setdefault("file", doc)
+            claims[c["id"]] = c
+        out.append((rel, led, doc, claims))
+    return out
+
+
+def merged(sidecars):
+    """One ledger-shaped view over every sidecar, for compare()."""
+    claims = []
+    for _, _, _, by_id in sidecars:
+        claims += list(by_id.values())
+    return {"claim": claims}
+
+
 def corpus_from(ledger, args):
     """The corpus and walk options: the ledger's, unless overridden."""
     paths = getattr(args, "paths", None) or ledger.get("corpus") or []
@@ -816,27 +1062,28 @@ def corpus_from(ledger, args):
 
 def cmd_check(args):
     root = args.root
-    ledger_path = os.path.join(root, args.ledger)
-    if not os.path.isfile(ledger_path):
-        print("no ledger at %s — run `ledger.py init` first" % args.ledger,
+    sidecars = load_all(root)
+    if not sidecars:
+        print("no sidecars found — run `ledger.py init <paths>` first",
               file=sys.stderr)
         return 2
-    ledger = load_ledger(ledger_path)
-    if not (args.paths or ledger.get("corpus")):
-        print("ledger names no corpus and none was given", file=sys.stderr)
-        return 2
 
-    opts = corpus_from(ledger, args)
-    entries, files, _ = extract(opts["paths"], opts["excludes"],
+    docs = [doc for _, _, doc, _ in sidecars]
+    opts = corpus_from(sidecars[0][1], args)
+    targets = args.paths or [os.path.join(root, d) for d in docs]
+    entries, files, _ = extract(targets, opts["excludes"],
                                 opts["include_records"], opts["include_code"],
                                 root)
+    ledger = merged(sidecars)
     state = compare(entries, ledger, root)
     recorded = claims_by_id(ledger)
 
     if args.backlog:
         return _print_backlog(entries, state, recorded, args)
     if args.prune:
-        return _prune(ledger, entries, ledger_path, args)
+        return _prune_sidecars(sidecars, entries, root, args)
+    if args.relocate:
+        return _relocate(sidecars, root, args)
 
     blocking, advisory, rows = 0, 0, []
     for entry in state["new"]:
@@ -844,8 +1091,6 @@ def cmd_check(args):
         rows.append(("FAIL", entry, "new claim, no verdict"))
     for entry, prior, reasons in state["stale"]:
         if prior.get("verdict") == "unverified" and prior.get("exempt"):
-            # An exempt claim that was edited has lost its grandfathering:
-            # somebody touched the sentence, so somebody can settle it.
             if "claim edited" in reasons:
                 blocking += 1
                 rows.append(("FAIL", entry,
@@ -853,14 +1098,13 @@ def cmd_check(args):
             continue
         blocking += 1
         rows.append(("FAIL", entry, "stale — " + "; ".join(reasons)))
-    exempt = live = refuted = unsupported = unverifiable = 0
+    exempt = live = unsupported = unverifiable = 0
     for entry, prior in state["live"]:
         verdict = prior.get("verdict", "unverified")
         if verdict == "refuted":
             blocking += 1
             rows.append(("FAIL", entry, "refuted — " +
                          (prior.get("correction") or "no correction recorded")))
-            refuted += 1
         elif verdict == "unsupported":
             unsupported += 1
             if args.strict:
@@ -876,12 +1120,10 @@ def cmd_check(args):
             unverifiable += 1
         else:
             live += 1
-    orphaned_verdicts = 0
     for orphan in state["orphan"]:
         if orphan.get("verdict", "unverified") == "unverified":
             rows.append(("prune", orphan, "no longer in the docs"))
             continue
-        orphaned_verdicts += 1
         advisory += 1
         rows.append(("NOTE", orphan,
                      "was %s, and the claim is gone — deleted, or reworded "
@@ -892,8 +1134,8 @@ def cmd_check(args):
         for level, entry, why in rows:
             if level == "prune":
                 continue
-            print("%-5s %s:%s  %s" % (level, entry["file"], entry.get("line", "?"),
-                                      why))
+            print("%-5s %s:%s  %s" % (level, entry.get("file", "?"),
+                                      entry.get("line", "?"), why))
         if exempt:
             print("ok    %d exempt (grandfathered, unverified)" % exempt)
         if live:
@@ -903,9 +1145,11 @@ def cmd_check(args):
                   % unverifiable)
         total = len(entries)
         verified = total - exempt - len(state["new"])
-        print("\n%d blocking, %d advisory. Coverage %d%% (%d/%d verified)."
+        print("\n%d blocking, %d advisory. Coverage %d%% (%d/%d verified) "
+              "across %d document(s)."
               % (blocking, advisory,
-                 (100 * verified // total) if total else 100, verified, total))
+                 (100 * verified // total) if total else 100, verified, total,
+                 len(sidecars)))
         if exempt:
             print("Exemption backlog: %d." % exempt)
         if state["orphan"]:
@@ -913,6 +1157,63 @@ def cmd_check(args):
                   % (len(state["orphan"]),
                      "y" if len(state["orphan"]) == 1 else "ies"))
     return 1 if blocking else 0
+
+
+def _relocate(sidecars, root, args):
+    """Re-address citations whose quote is intact but whose line has moved."""
+    moved, stuck = 0, []
+    for rel, led, doc, by_id in sidecars:
+        touched = False
+        for claim in led.get("claim", []):
+            for ev in claim.get("evidence", []):
+                now = evidence_hash(ev["file"], ev.get("lines", "1"), root)
+                if now == ev.get("hash"):
+                    continue
+                where = relocate_evidence(ev, root)
+                if where is None:
+                    stuck.append((claim["id"], ev["file"]))
+                    continue
+                ev["lines"] = where
+                ev["hash"] = evidence_hash(ev["file"], where, root)
+                moved += 1
+                touched = True
+        if touched and not args.dry_run:
+            for c in led.get("claim", []):
+                c.pop("file", None)
+            with open(os.path.join(root, rel), "w", encoding="utf-8") as fh:
+                fh.write(dumps(led))
+    verb = "would re-address" if args.dry_run else "Re-addressed"
+    print("%s %d citation(s) whose quote had not changed." % (verb, moved))
+    for cid, f in stuck:
+        print("  %s: quote is gone from %s — the evidence changed, so this "
+              "one needs a person." % (cid, f))
+    return 1 if stuck else 0
+
+
+def _prune_sidecars(sidecars, entries, root, args):
+    dropped = 0
+    for rel, led, doc, by_id in sidecars:
+        keep = [c for c in led.get("claim", []) if c["id"] in entries]
+        gone = len(led.get("claim", [])) - len(keep)
+        if not gone:
+            continue
+        dropped += gone
+        if args.dry_run:
+            continue
+        led["claim"] = keep
+        for c in keep:
+            c.pop("file", None)
+        with open(os.path.join(root, rel), "w", encoding="utf-8") as fh:
+            fh.write(dumps(led))
+    if not dropped:
+        print("no orphans.")
+    elif args.dry_run:
+        print("would prune %d orphan entr%s"
+              % (dropped, "y" if dropped == 1 else "ies"))
+    else:
+        print("Pruned %d orphan entr%s."
+              % (dropped, "y" if dropped == 1 else "ies"))
+    return 0
 
 
 def _print_backlog(entries, state, recorded, args):
@@ -1045,12 +1346,15 @@ def validate_verdict(item, root="."):
 
 def cmd_record(args):
     root = args.root
-    ledger_path = os.path.join(root, args.ledger)
-    if not os.path.isfile(ledger_path):
-        print("no ledger at %s" % args.ledger, file=sys.stderr)
+    sidecars = load_all(root)
+    if not sidecars:
+        print("no sidecars found — run `ledger.py init <paths>` first",
+              file=sys.stderr)
         return 2
-    ledger = load_ledger(ledger_path)
-    recorded = claims_by_id(ledger)
+    owner = {}
+    for rel, led, doc, by_id in sidecars:
+        for cid in by_id:
+            owner[cid] = (rel, led, doc, by_id)
 
     with open(args.verdicts, encoding="utf-8") as fh:
         payload = json.load(fh)
@@ -1059,49 +1363,50 @@ def cmd_record(args):
         print("no verdicts in %s" % args.verdicts, file=sys.stderr)
         return 2
 
-    # A claim can be verified before the ledger has heard of it: fixing a
-    # false sentence writes a new one, and verifying it in the same session
-    # is the whole point. So an id that is in the corpus but not the ledger
-    # is enrolled here rather than rejected — that flow was impossible until
-    # trying the tool on this repository made it obvious.
-    enrolled = None
-    stamp, revision, applied, failed, added = _now(), _revision(root), 0, [], 0
+    opts = corpus_from(sidecars[0][1], args)
+    docs = [doc for _, _, doc, _ in sidecars]
+    enrolled, _, _ = extract([os.path.join(root, d) for d in docs],
+                             opts["excludes"], opts["include_records"],
+                             opts["include_code"], root)
+
+    stamp, revision = _now(), _revision(root)
+    applied, failed, added, touched = 0, [], 0, {}
     for item in items:
         cid = item.get("id")
-        claim = recorded.get(cid)
-        if claim is None:
-            if enrolled is None:
-                opts = corpus_from(ledger, args)
-                enrolled, _, _ = extract(opts["paths"], opts["excludes"],
-                                         opts["include_records"],
-                                         opts["include_code"], root)
-            fresh = enrolled.get(cid)
+        entry = owner.get(cid)
+        fresh = enrolled.get(cid)
+        if entry is None:
+            # A claim can be verified before any sidecar has heard of it:
+            # fixing a false sentence writes a new one, and verifying it in
+            # the same session is the point.
             if fresh is None:
-                failed.append((cid, "no such claim: not in the ledger, and no "
+                failed.append((cid, "no such claim: in no sidecar, and no "
                                     "sentence in the corpus has that id"))
                 continue
+            target = None
+            for rel, led, doc, by_id in sidecars:
+                if doc == fresh["file"]:
+                    target = (rel, led, doc, by_id)
+                    break
+            if target is None:
+                failed.append((cid, "no sidecar covers %s" % fresh["file"]))
+                continue
             claim = dict(fresh)
-            ledger.setdefault("claim", []).append(claim)
-            recorded[cid] = claim
+            target[1].setdefault("claim", []).append(claim)
+            target[3][cid] = claim
+            owner[cid] = target
+            entry = target
             added += 1
+        rel, led, doc, by_id = entry
+        claim = by_id[cid]
         try:
             evidence = validate_verdict(item, root)
         except RecordError as exc:
             failed.append((cid, str(exc)))
             continue
-        # A verdict is reached against the sentence as it reads now, so the
-        # entry takes the current text, line and hashes. Without this, a
-        # staled claim stays stale after being re-verified — the ledger keeps
-        # comparing against the wording somebody already replaced.
-        if enrolled is None:
-            opts = corpus_from(ledger, args)
-            enrolled, _, _ = extract(opts["paths"], opts["excludes"],
-                                     opts["include_records"],
-                                     opts["include_code"], root)
-        fresh = enrolled.get(cid)
+        # A verdict is reached against the sentence as it reads now.
         if fresh:
-            for key in ("file", "line", "text", "identity_hash",
-                        "skeleton_hash", "class"):
+            for key in ("line", "text", "anchored", "skeleton_hash", "class"):
                 claim[key] = fresh[key]
         claim["verdict"] = item["verdict"]
         claim["verified_at"] = stamp
@@ -1120,6 +1425,7 @@ def cmd_record(args):
         if evidence:
             claim["evidence"] = evidence
         applied += 1
+        touched[rel] = entry
 
     for cid, why in failed:
         print("REJECTED %s: %s" % (cid, why), file=sys.stderr)
@@ -1128,11 +1434,20 @@ def cmd_record(args):
               "--partial to record the rest." % len(failed), file=sys.stderr)
         return 1
 
-    ledger["generated_at"] = stamp
-    with open(ledger_path, "w", encoding="utf-8") as fh:
-        fh.write(dumps(ledger))
-    print("Recorded %d verdict(s) in %s%s."
-          % (applied, args.ledger,
+    for rel, (_, led, doc, by_id) in touched.items():
+        led["generated_at"] = stamp
+        for c in led.get("claim", []):
+            c.pop("file", None)
+        with open(os.path.join(root, rel), "w", encoding="utf-8") as fh:
+            fh.write(dumps(led))
+        # Keep the footnotes current, but only where the document already
+        # carries anchors — record never introduces them.
+        claims = [dict(c, file=doc) for c in led.get("claim", [])]
+        if any(c.get("anchored") for c in claims):
+            sync_anchors(doc, claims, root)
+
+    print("Recorded %d verdict(s) across %d sidecar(s)%s."
+          % (applied, len(touched),
              "; %d claim(s) enrolled on the way" % added if added else ""))
     if failed:
         print("Rejected %d." % len(failed))
@@ -1140,20 +1455,18 @@ def cmd_record(args):
 
 
 def cmd_show(args):
-    root = args.root
-    ledger = load_ledger(os.path.join(root, args.ledger))
-    target = args.target
-    matches = []
-    for claim in ledger.get("claim", []):
-        if claim["id"] == target or "%s:%s" % (claim["file"],
-                                               claim.get("line")) == target \
-                or claim["file"] == target:
-            matches.append(claim)
+    root, target, matches = args.root, args.target, []
+    for _, _, doc, by_id in load_all(root):
+        for claim in by_id.values():
+            if claim["id"] == target or anchor_id(claim["id"]) == target \
+                    or "%s:%s" % (doc, claim.get("line")) == target \
+                    or doc == target:
+                matches.append((doc, claim))
     if not matches:
         print("no claim matching %r" % target, file=sys.stderr)
         return 2
-    for claim in matches:
-        print("%s:%s  [%s]  %s" % (claim["file"], claim.get("line", "?"),
+    for doc, claim in matches:
+        print("%s:%s  [%s]  %s" % (doc, claim.get("line", "?"),
                                    claim.get("class", "-"), claim["id"]))
         print("    %s" % claim["text"])
         line = "    %s" % claim.get("verdict", "unverified")
@@ -1164,6 +1477,8 @@ def cmd_show(args):
                                               claim.get("verified_by", "?"))
         if claim.get("revision"):
             line += " @ %s" % claim["revision"]
+        if claim.get("anchored"):
+            line += " · anchored [^%s]" % anchor_id(claim["id"])
         print(line)
         for ev in claim.get("evidence", []):
             now = evidence_hash(ev["file"], ev["lines"], root)
@@ -1187,16 +1502,13 @@ def cmd_wire_only(args):
     often comes later, so it must not require re-enrolling to reach.
     """
     root = args.root
-    ledger = {}
-    ledger_path = os.path.join(root, args.ledger)
-    if os.path.isfile(ledger_path):
-        ledger = load_ledger(ledger_path)
-    corpus = args.paths or ledger.get("corpus") or ["docs"]
-    found = wiring_reference(root, args.ledger)
+    docs = [doc for _, _, doc, _ in load_all(root)]
+    corpus = args.paths or docs or ["docs"]
+    found = wiring_reference(root)
     if found:
         print("Already referenced — %s:%d." % found)
         return 0
-    block = block_for(args.ledger, corpus)
+    block = block_for("<doc>" + SIDECAR_SUFFIX, corpus)
     print(block)
     return apply_wiring(root, wiring_target(root), block, create=args.create)
 
@@ -1206,8 +1518,6 @@ def main():
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", default=".", help="repository root (default: .)")
-    ap.add_argument("--ledger", default=DEFAULT_LEDGER,
-                    help="ledger path, relative to --root")
     sub = ap.add_subparsers(dest="command")
 
     # The same two options are accepted after the subcommand as well, because
@@ -1215,7 +1525,6 @@ def main():
     # subparser from clobbering a value given before the subcommand.
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--root", default=argparse.SUPPRESS)
-    common.add_argument("--ledger", default=argparse.SUPPRESS)
 
     # Four commands, because there are four things a person does: enrol once,
     # ask what needs attention, write down what they found, and look up one
@@ -1237,6 +1546,10 @@ def main():
                              "works on an already-enrolled repo")
     p_init.add_argument("--create", action="store_true",
                         help="with --wire, create AGENTS.md if none exists")
+    p_init.add_argument("--anchor", action="store_true",
+                        help="write each claim's id into the document as a "
+                             "markdown footnote, so a reworded sentence keeps "
+                             "its verdict")
     p_init.add_argument("--print-hook", action="store_true",
                         help="print the PostToolUse hook and exit")
     p_init.set_defaults(func=cmd_init)
@@ -1256,6 +1569,9 @@ def main():
                          help="list what to verify next, batched by evidence")
     p_check.add_argument("--limit", type=int, default=10,
                          help="with --backlog, how many to list")
+    p_check.add_argument("--relocate", action="store_true",
+                         help="re-address citations whose quote is unchanged "
+                              "but whose line moved; verdicts are untouched")
     p_check.add_argument("--prune", action="store_true",
                          help="drop entries whose claim is gone")
     p_check.add_argument("--dry-run", action="store_true",

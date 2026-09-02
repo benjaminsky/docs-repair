@@ -200,7 +200,7 @@ jobs:
       - name: lie-detector — init enrols, gate passes, new claim fails it
         run: |
           rm -rf /tmp/ldci && cp -r evals/fixtures/repo-d /tmp/ldci
-          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci --ledger docs/.claims.toml"
+          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci"
           $LD init /tmp/ldci/docs > /dev/null
           $LD check > /dev/null
           printf '\nThe `--flush-interval` flag defaults to 60 seconds.\n' \
@@ -213,11 +213,11 @@ jobs:
 
       - name: lie-detector — record refuses a verdict with no evidence
         run: |
-          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci --ledger docs/.claims.toml"
+          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci"
           ID=$(python3 -c "
           import sys; sys.path.insert(0, '$PWD/skills/lie-detector/scripts')
           import ledger
-          print(ledger.load_ledger('/tmp/ldci/docs/.claims.toml')['claim'][0]['id'])")
+          print(ledger.load_ledger('/tmp/ldci/docs/relay.claims.toml')['claim'][0]['id'])")
           echo "[{\"id\": \"$ID\", \"verdict\": \"supported\"}]" > /tmp/ldci/bad.json
           set +e; $LD record /tmp/ldci/bad.json > /dev/null 2>&1; status=$?; set -e
           if [ "$status" -ne 1 ]; then
@@ -227,11 +227,11 @@ jobs:
 
       - name: lie-detector — a code change stales the claims that cite it
         run: |
-          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci --ledger docs/.claims.toml"
+          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci"
           ID=$(python3 -c "
           import sys; sys.path.insert(0, '$PWD/skills/lie-detector/scripts')
           import ledger
-          led = ledger.load_ledger('/tmp/ldci/docs/.claims.toml')
+          led = ledger.load_ledger('/tmp/ldci/docs/relay.claims.toml')
           print(next(c['id'] for c in led['claim'] if 'batch-size' in c['text']))")
           cat > /tmp/ldci/ok.json <<JSON
           [{"id": "$ID", "verdict": "supported",
@@ -241,8 +241,22 @@ jobs:
           $LD record /tmp/ldci/ok.json --by ci > /dev/null
           sed -i 's/BATCH_SIZE = 500/BATCH_SIZE = 100/' /tmp/ldci/src/relay.py
           set +e; out=$($LD check); status=$?; set -e
-          if [ "$status" -ne 1 ] || ! echo "$out" | grep -q "evidence moved"; then
-            echo "::error::a moved constant did not stale the claim citing it"
+          if [ "$status" -ne 1 ] || ! echo "$out" | grep -q "evidence changed"; then
+            echo "::error::a changed constant did not stale the claim citing it"
+            echo "$out"
+            exit 1
+          fi
+
+      # The other half of the same rule: code that only moved is bookkeeping,
+      # and --relocate must fix it without touching a verdict.
+      - name: lie-detector — a citation that only moved is re-addressed
+        run: |
+          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci"
+          sed -i 's/BATCH_SIZE = 100/BATCH_SIZE = 500/' /tmp/ldci/src/relay.py
+          sed -i '1i # a comment inserted above the evidence' /tmp/ldci/src/relay.py
+          out=$($LD check --relocate)
+          if ! echo "$out" | grep -q "Re-addressed 1"; then
+            echo "::error::a citation whose quote was intact was not re-addressed"
             echo "$out"
             exit 1
           fi
@@ -261,7 +275,7 @@ jobs:
       # unsupported stays advisory, because several claims here are about
       # Claude Code's cloud environment and no checkout can settle those.
       - name: Every claim in README.md and CLAUDE.md carries a live verdict
-        run: python3 skills/lie-detector/scripts/ledger.py check --ledger .claims.toml
+        run: python3 skills/lie-detector/scripts/ledger.py check
 
   manifests:
     name: plugin manifests

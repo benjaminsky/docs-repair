@@ -57,6 +57,15 @@ from collections import defaultdict
 # ---------------------------------------------------------------------------
 
 FENCE = re.compile(r"^\s*(```|~~~)")
+
+# The ledger's own output is not a claim. Anchors are stripped from the text
+# they mark, and the footnote block the ledger maintains is skipped entirely
+# — extracting "supported · 2026-09-02 · src/relay.py:3" as a claim would
+# have the tool verifying its own bookkeeping, and re-verifying it every time
+# a verdict changed.
+CLAIM_ANCHOR = re.compile(r"\[\^c[0-9a-f]{8}\]")
+CLAIM_DEF = re.compile(r"^\s*\[\^c[0-9a-f]{8}\]:")
+CLAIM_BLOCK = "<!-- claim anchors:"
 HEADING = re.compile(r"^\s*#{1,6}\s")
 BULLET = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 TABLE_SEP = re.compile(r"^\s*\|?[\s:|-]*-{2,}[\s:|-]*\|?\s*$")
@@ -93,6 +102,8 @@ def prose_lines(lines):
                 in_comment = True
             continue
         if not s:
+            continue
+        if CLAIM_DEF.match(s) or s.startswith(CLAIM_BLOCK):
             continue
         yield n, line
 
@@ -143,7 +154,11 @@ def blocks(prose):
 
 ABBREV = re.compile(r"\b(?:e\.g|i\.e|etc|vs|cf|approx|Fig|Eq|al|Inc|Ltd"
                     r"|Mr|Ms|Dr|St)\.$", re.I)
-SPLIT = re.compile(r"(?<=[.!?])\s+(?=[\"'`(\[*_A-Z0-9])")
+# A sentence may end with its claim anchor — "…per flush.[^c4e233156]" — and
+# the split has to happen after the marker, not be blocked by it. Both
+# lookbehinds are fixed width, which is what Python requires.
+SPLIT = re.compile(r"(?:(?<=[.!?])|(?<=\[\^c[0-9a-f]{8}\]))"
+                   r"\s+(?=[\"'`(\[*_A-Z0-9])")
 
 
 def sentences(block):
@@ -294,8 +309,16 @@ def normalise(text):
     return re.sub(r"\s+", " ", EMPHASIS.sub("", text)).strip()
 
 
-def claims_in(path, rel=None):
-    """Every claim candidate in one file, in document order."""
+def claims_in(path, rel=None, include=None):
+    """Every claim candidate in one file, in document order.
+
+    `include` is an optional predicate that forces a sentence into the
+    population regardless of the patterns. The ledger passes one so that a
+    sentence carrying an explicit claim anchor stays a claim even after a
+    rewrite that leaves it matching nothing — the anchor is the author saying
+    this sentence is tracked, and a rewrite must not be able to drop it
+    silently.
+    """
     try:
         with open(path, encoding="utf-8") as fh:
             lines = fh.read().splitlines()
@@ -317,8 +340,11 @@ def claims_in(path, rel=None):
         for lineno, sentence in sentences(block):
             verdict = classify(sentence, floor)
             if not verdict:
-                continue
-            cls, label = verdict
+                if not (include and include(sentence)):
+                    continue
+                cls, label = "-", "anchored, matching no class"
+            else:
+                cls, label = verdict
             norm = normalise(sentence)
             occurrence = seen[norm]
             seen[norm] += 1

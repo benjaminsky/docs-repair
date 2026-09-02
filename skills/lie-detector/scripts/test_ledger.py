@@ -235,7 +235,7 @@ class TestCompare(unittest.TestCase):
         self.assertIn("claim edited", state["stale"][0][2])
         self.assertEqual(state["new"], [])
 
-    def test_moved_evidence_is_stale(self):
+    def test_changed_evidence_is_stale(self):
         root = tree()
         ev = [{"file": "src/relay.py", "lines": "1", "quote": "BATCH_SIZE = 500",
                "hash": ledger.evidence_hash("src/relay.py", "1", root)}]
@@ -245,7 +245,21 @@ class TestCompare(unittest.TestCase):
             fh.write("BATCH_SIZE = 100\nTIMEOUT_SECONDS = 10\n")
         state = ledger.compare(entries_of(root), led, root)
         reasons = [r for _, _, rs in state["stale"] for r in rs]
-        self.assertTrue(any("evidence moved" in r for r in reasons), reasons)
+        self.assertTrue(any("evidence changed" in r for r in reasons), reasons)
+
+    def test_evidence_that_only_moved_says_so(self):
+        root = tree()
+        ev = [{"file": "src/relay.py", "lines": "1", "quote": "BATCH_SIZE = 500",
+               "hash": ledger.evidence_hash("src/relay.py", "1", root)}]
+        led, _ = self.ledger_for(root, evidence=ev)
+        path = os.path.join(root, "src", "relay.py")
+        with open(path, encoding="utf-8") as fh:
+            body = fh.read()
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("# inserted\n" + body)
+        state = ledger.compare(entries_of(root), led, root)
+        reasons = [r for _, _, rs in state["stale"] for r in rs]
+        self.assertTrue(any("quote unchanged" in r for r in reasons), reasons)
 
     def test_a_deleted_claim_is_an_orphan(self):
         root = tree()
@@ -362,21 +376,190 @@ class TestWiring(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(root, "AGENTS.md")))
 
 
+class TestSidecarsAndAnchors(unittest.TestCase):
+    """The two things a claim needs: somewhere to live, and a stable name."""
+
+    def run_cli(self, root, *args):
+        proc = subprocess.run(
+            [sys.executable, os.path.join(HERE, "ledger.py"), "--root", root]
+            + list(args), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        return proc.returncode, proc.stdout.decode("utf-8", "replace")
+
+    def test_init_writes_one_sidecar_per_document(self):
+        root = tree(extra={"docs/ops.md": "# Ops\n\nThe drain never blocks "
+                                          "longer than the timeout.\n"})
+        code, out = self.run_cli(root, "init", os.path.join(root, "docs"))
+        self.assertEqual(code, 0, out)
+        for name in ("relay.claims.toml", "ops.claims.toml"):
+            self.assertTrue(os.path.isfile(os.path.join(root, "docs", name)),
+                            name + " missing\n" + out)
+
+    def test_a_sidecar_names_the_document_it_covers(self):
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"))
+        led = ledger.load_ledger(os.path.join(root, "docs",
+                                              "relay.claims.toml"))
+        self.assertEqual(led["doc"], "docs/relay.md")
+
+    def test_check_finds_its_work_without_being_told_the_corpus(self):
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"))
+        code, out = self.run_cli(root, "check")
+        self.assertEqual(code, 0, out)
+        self.assertIn("across 1 document(s)", out)
+
+    def test_the_marker_is_the_id(self):
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"), "--anchor")
+        led = ledger.load_ledger(os.path.join(root, "docs",
+                                              "relay.claims.toml"))
+        with open(os.path.join(root, "docs", "relay.md"),
+                  encoding="utf-8") as fh:
+            body = fh.read()
+        for claim in led["claim"]:
+            self.assertIn("[^c%s]" % claim["id"], body)
+
+    def test_anchoring_is_idempotent(self):
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"), "--anchor")
+        with open(os.path.join(root, "docs", "relay.md"), encoding="utf-8") as fh:
+            once = fh.read()
+        led = ledger.load_ledger(os.path.join(root, "docs", "relay.claims.toml"))
+        claims = [dict(c, file="docs/relay.md") for c in led["claim"]]
+        ledger.sync_anchors("docs/relay.md", claims, root)
+        with open(os.path.join(root, "docs", "relay.md"), encoding="utf-8") as fh:
+            self.assertEqual(once, fh.read())
+
+    def test_an_anchored_claim_survives_a_rewrite(self):
+        # The whole point of the anchor: without it, a reworded sentence is an
+        # orphan plus a new claim, and the verdict is lost.
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"), "--anchor")
+        path = os.path.join(root, "docs", "relay.md")
+        with open(path, encoding="utf-8") as fh:
+            body = fh.read()
+        body = body.replace(
+            "The `--batch-size` flag defaults to 500 events per flush.",
+            "Each flush carries 500 events unless `--batch-size` says otherwise.")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(body)
+        entries, _, _ = ledger.extract([os.path.join(root, "docs")], root=root)
+        led = ledger.load_ledger(os.path.join(root, "docs", "relay.claims.toml"))
+        state = ledger.compare(entries, led, root)
+        self.assertEqual(state["orphan"], [])
+        self.assertEqual(state["new"], [])
+
+    def test_a_table_row_is_anchored_in_its_last_cell(self):
+        root = tree(doc="# R\n\n| Option | Default |\n| --- | --- |\n"
+                        "| `--timeout` | 30 seconds |\n")
+        self.run_cli(root, "init", os.path.join(root, "docs"), "--anchor")
+        with open(os.path.join(root, "docs", "relay.md"),
+                  encoding="utf-8") as fh:
+            row = [l for l in fh if "--timeout" in l][0]
+        self.assertRegex(row.strip(), r"\[\^c[0-9a-f]{8}\] \|$")
+
+    def test_the_anchor_is_not_part_of_the_claim(self):
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"), "--anchor")
+        entries, _, _ = ledger.extract([os.path.join(root, "docs")], root=root)
+        for entry in entries.values():
+            self.assertNotIn("[^c", entry["text"])
+
+    def test_an_anchor_in_a_code_span_is_an_example_not_an_id(self):
+        # The docs explaining the scheme quote a marker; reading it as an id
+        # hands two unrelated sentences the same claim.
+        root = tree(doc="# R\n\nA claim carries its id as `[^cdeadbeef]` at "
+                        "the end of the sentence, and defaults to 500 rows.\n")
+        entries, _, _ = ledger.extract([os.path.join(root, "docs")], root=root)
+        self.assertNotIn("deadbeef", entries)
+        self.assertFalse(list(entries.values())[0]["anchored"])
+
+    def test_a_quoted_anchor_stays_in_the_claim_text(self):
+        # Stripping it would make the stored sentence differ from the one in
+        # the document, and the claim would stale on every anchoring pass.
+        root = tree(doc="# R\n\nA claim carries `[^cdeadbeef]` and defaults "
+                        "to 500 rows per flush.\n")
+        entry = list(entries_of(root).values())[0]
+        self.assertIn("`[^cdeadbeef]`", entry["text"])
+
+    def test_footnotes_are_rewritten_not_accumulated(self):
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"), "--anchor")
+        led = ledger.load_ledger(os.path.join(root, "docs", "relay.claims.toml"))
+        claims = [dict(c, file="docs/relay.md") for c in led["claim"]]
+        for _ in range(3):
+            ledger.sync_anchors("docs/relay.md", claims, root)
+        with open(os.path.join(root, "docs", "relay.md"),
+                  encoding="utf-8") as fh:
+            body = fh.read()
+        self.assertEqual(body.count(ledger.ANCHOR_HEADER), 1)
+
+
+class TestRelocate(unittest.TestCase):
+    def run_cli(self, root, *args):
+        proc = subprocess.run(
+            [sys.executable, os.path.join(HERE, "ledger.py"), "--root", root]
+            + list(args), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        return proc.returncode, proc.stdout.decode("utf-8", "replace")
+
+    def verified(self, root):
+        self.run_cli(root, "init", os.path.join(root, "docs"))
+        led = ledger.load_ledger(os.path.join(root, "docs",
+                                              "relay.claims.toml"))
+        cid = next(c["id"] for c in led["claim"] if "batch-size" in c["text"])
+        path = os.path.join(root, "v.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump([{"id": cid, "verdict": "supported",
+                        "evidence": [{"file": "src/relay.py", "lines": "1",
+                                      "quote": "BATCH_SIZE = 500"}]}], fh)
+        self.run_cli(root, "record", path, "--by", "test")
+        return cid
+
+    def test_a_citation_that_only_moved_is_re_addressed(self):
+        # Inserting a line above the evidence moves every citation below it
+        # and changes nothing about the evidence itself.
+        root = tree()
+        self.verified(root)
+        path = os.path.join(root, "src", "relay.py")
+        with open(path, encoding="utf-8") as fh:
+            body = fh.read()
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("# a new comment\n" + body)
+        self.assertEqual(self.run_cli(root, "check")[0], 1)
+        code, out = self.run_cli(root, "check", "--relocate")
+        self.assertEqual(code, 0, out)
+        self.assertIn("Re-addressed 1", out)
+        self.assertEqual(self.run_cli(root, "check")[0], 0)
+
+    def test_evidence_that_really_changed_is_not_re_addressed(self):
+        root = tree()
+        self.verified(root)
+        path = os.path.join(root, "src", "relay.py")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("BATCH_SIZE = 100\nTIMEOUT_SECONDS = 10\n")
+        code, out = self.run_cli(root, "check", "--relocate")
+        self.assertEqual(code, 1, out)
+        self.assertIn("needs a person", out)
+
+
 class TestCommandLine(unittest.TestCase):
     """Exit codes are what a CI gate wires itself to, both directions."""
 
     def run_cli(self, root, *args):
         proc = subprocess.run(
-            [sys.executable, os.path.join(HERE, "ledger.py"), "--root", root,
-             "--ledger", "docs/.claims.toml"] + list(args),
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            [sys.executable, os.path.join(HERE, "ledger.py"), "--root", root]
+            + list(args), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         return proc.returncode, proc.stdout.decode("utf-8", "replace")
+
+    @staticmethod
+    def sidecar(root):
+        return os.path.join(root, "docs", "relay.claims.toml")
 
     def test_init_then_check_is_green_and_re_init_refuses(self):
         root = tree()
         code, out = self.run_cli(root, "init", os.path.join(root, "docs"))
         self.assertEqual(code, 0, out)
-        self.assertIn("all `unverified`, all `exempt`", out)
+        self.assertIn("claims extracted", out)
         self.assertEqual(self.run_cli(root, "check")[0], 0)
         self.assertEqual(self.run_cli(root, "init",
                                       os.path.join(root, "docs"))[0], 2)
@@ -428,7 +611,7 @@ class TestCommandLine(unittest.TestCase):
         # ledger kept diffing against a sentence nobody had written since.
         root = tree()
         self.run_cli(root, "init", os.path.join(root, "docs"))
-        led = ledger.load_ledger(os.path.join(root, "docs", ".claims.toml"))
+        led = ledger.load_ledger(self.sidecar(root))
         cid = next(c["id"] for c in led["claim"] if "batch-size" in c["text"])
         path = os.path.join(root, "docs", "relay.md")
         with open(path, encoding="utf-8") as fh:
@@ -487,27 +670,27 @@ class TestCommandLine(unittest.TestCase):
         # eventually gets mis-invoked in CI.
         root = tree()
         self.run_cli(root, "init", os.path.join(root, "docs"), "--code")
-        led = ledger.load_ledger(os.path.join(root, "docs", ".claims.toml"))
+        led = ledger.load_ledger(self.sidecar(root))
         self.assertTrue(led.get("code"))
         self.assertEqual(self.run_cli(root, "check")[0], 0)
 
     def test_record_rejects_and_writes_nothing(self):
         root = tree()
         self.run_cli(root, "init", os.path.join(root, "docs"))
-        led = ledger.load_ledger(os.path.join(root, "docs", ".claims.toml"))
+        led = ledger.load_ledger(self.sidecar(root))
         cid = led["claim"][0]["id"]
         path = os.path.join(root, "bad.json")
         with open(path, "w", encoding="utf-8") as fh:
             json.dump([{"id": cid, "verdict": "supported"}], fh)
         code, out = self.run_cli(root, "record", path)
         self.assertEqual(code, 1, out)
-        after = ledger.load_ledger(os.path.join(root, "docs", ".claims.toml"))
+        after = ledger.load_ledger(self.sidecar(root))
         self.assertEqual(after["claim"][0]["verdict"], "unverified")
 
     def test_record_then_show_carries_the_provenance(self):
         root = tree()
         self.run_cli(root, "init", os.path.join(root, "docs"))
-        led = ledger.load_ledger(os.path.join(root, "docs", ".claims.toml"))
+        led = ledger.load_ledger(self.sidecar(root))
         cid = next(c["id"] for c in led["claim"] if "batch-size" in c["text"])
         path = os.path.join(root, "ok.json")
         with open(path, "w", encoding="utf-8") as fh:
@@ -532,10 +715,10 @@ class TestCommandLine(unittest.TestCase):
         code, out = self.run_cli(root, "check", "--prune", "--dry-run")
         self.assertIn("would prune 1", out)
         before = len(ledger.load_ledger(
-            os.path.join(root, "docs", ".claims.toml"))["claim"])
+            self.sidecar(root))["claim"])
         self.run_cli(root, "check", "--prune")
         after = len(ledger.load_ledger(
-            os.path.join(root, "docs", ".claims.toml"))["claim"])
+            self.sidecar(root))["claim"])
         self.assertEqual(after, before - 1)
 
 

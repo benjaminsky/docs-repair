@@ -396,6 +396,16 @@ def apply_safe_fixes(line):
 
 FENCE = re.compile(r"^\s*(```|~~~)")
 
+# Claim anchors and their footnote definitions are provenance, not staging.
+# A marker like [^c4e23315] and its definition ("supported · 2026-09-01 ·
+# src/relay.py:3") are metadiscourse by the letter of the definition — their
+# subject is the document — but what they carry is whether a sentence is
+# true, which is the one thing about a document that is content. They are
+# skipped here and protected in the skill's step 1.
+CLAIM_ANCHOR = re.compile(r"\[\^c[0-9a-f]{8}\]")
+CLAIM_DEF = re.compile(r"^\s*\[\^c[0-9a-f]{8}\]:")
+CLAIM_BLOCK = "<!-- claim anchors:"
+
 
 def prose_lines(lines):
     """Yield (lineno, line) for prose only.
@@ -432,7 +442,9 @@ def prose_lines(lines):
             continue
         if not s:
             continue
-        yield n, line
+        if CLAIM_DEF.match(s) or s.startswith(CLAIM_BLOCK):
+            continue                      # verification provenance, protected
+        yield n, CLAIM_ANCHOR.sub("", line)
 
 
 # ---------------------------------------------------------------------------
