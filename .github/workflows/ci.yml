@@ -247,6 +247,22 @@ jobs:
             exit 1
           fi
 
+  claims:
+    name: documentation claims
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # This repository runs its own lie-detector against its own prose. The
+      # gate blocks a claim nobody has verified and one the tree contradicts;
+      # unsupported stays advisory, because several claims here are about
+      # Claude Code's cloud environment and no checkout can settle those.
+      - name: Every claim in README.md and CLAUDE.md carries a live verdict
+        run: python3 skills/lie-detector/scripts/ledger.py check --ledger .claims.toml
+
   manifests:
     name: plugin manifests
     runs-on: ubuntu-latest

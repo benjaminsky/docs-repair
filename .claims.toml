@@ -1,0 +1,1435 @@
+# Written by lie-detector. One entry per factual claim, with the
+# evidence that settled it. Re-check with: ledger.py check
+schema = 1
+corpus = ["README.md", "CLAUDE.md"]
+generated_at = "2026-09-02T12:07:17Z"
+revision = "0d0b54c"
+
+[[claim]]
+id = "04a3c2ee7ef9"
+file = "CLAUDE.md"
+line = 55
+text = "Two of its guarantees are true, and the journal guarantee is unsettleable from the tree on purpose — it is what an Unsupported verdict is tested against."
+identity_hash = "23ae942b"
+skeleton_hash = "29645665"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "evals/fixtures/repo-d/src/relay.py"
+  lines = "11"
+  hash = "26b9c618"
+  quote = "# The sink is idempotent on the event id, so a replay after a crash"
+  note = "the idempotence guarantee holds in the tree; no journal exists anywhere in repo-d, which is what makes that third guarantee unsettleable"
+
+[[claim]]
+id = "0b55772c738c"
+file = "README.md"
+line = 391
+text = "One environment covers every cloud session you start from it — the web, `claude --cloud`, the mobile and desktop apps, and routines — across all your repositories."
+identity_hash = "131e38e1"
+skeleton_hash = "134fb84f"
+class = "C"
+verdict = "unsupported"
+note = "a claim about the scope of a Claude Code environment. Not settleable from this repository."
+searched = ["environment", "cloud", "routines", "the whole tree"]
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "0dad975bf198"
+file = "README.md"
+line = 516
+text = "Dated plans, specs, ADRs, RFCs and changelogs are excluded by default — an exclusion from scanning, not a verdict that they should be kept; the one record the slop audit will propose deleting is a plan whose work has already merged."
+identity_hash = "e4d458e3"
+skeleton_hash = "e2ab7881"
+class = "A"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/scan.py"
+  lines = "436"
+  hash = "92140b23"
+  quote = "RECORD_DIRS = (\"/plans/\", \"/specs/\", \"/adr/\", \"/adrs/\", \"/rfc/\", \"/rfcs/\","
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "219"
+  hash = "a58652e7"
+  quote = "### Plans die at the merge; specs do not"
+  note = "the second half of the sentence: the one record the slop audit proposes deleting"
+
+[[claim]]
+id = "11aa7726e865"
+file = "README.md"
+line = 275
+text = "Reword a sentence and the verdict holds; change 500 to 100, or \"never\" to \"rarely\", or the constant the claim cites, and that one entry goes stale:"
+identity_hash = "58874762"
+skeleton_hash = "3095ca35"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "275"
+  hash = "91b1e558"
+  quote = "def skeleton(text):"
+  note = "skeleton carries identifiers, numbers, units and quantifiers, so rewording holds and 500->100 or never->rarely moves it; test_ledger.py pins all three cases"
+
+[[claim]]
+id = "14f6b3612bd7"
+file = "README.md"
+line = 506
+text = "Everything else needs someone to decide what the surviving fact is, and keeping `--fix` that narrow is what makes it safe to run unattended."
+identity_hash = "340c7329"
+skeleton_hash = "340c7329"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/scripts/scan.py"
+  lines = "910"
+  hash = "f7f82bc4"
+  quote = "print(f\"{fixable} of these are mechanical — --fix applies them, \""
+  note = "--fix is restricted to the mechanical subset; everything else is left to a reader"
+
+[[claim]]
+id = "16ef9f883331"
+file = "README.md"
+line = 24
+text = "A dependency-free scanner produces a `file:line` inventory of candidates; the skill triages each against the surrounding paragraph into a verdict — cut, fold, move, verify, or keep — with a concrete rewrite; and a deliberately narrow `--fix` applies only the rewrites whose removal cannot lose a fact."
+identity_hash = "f748019f"
+skeleton_hash = "db4c380e"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/scripts/scan.py"
+  lines = "890"
+  hash = "e0c2338a"
+  quote = "print(f\"{f['file']}:{f['line']}  [{f['label']}]\")"
+  note = "the inventory is printed as file:line plus a class label"
+
+[[claim]]
+id = "186f5991c9bc"
+file = "README.md"
+line = 58
+text = "Class 0 is each cleanup audit's objective tier — iteration artifacts and misplaced caveats on one side, chat residue and phantom links on the other — so the first slice is the one you will almost always accept; everything below it is taste and deserves a look before it lands."
+identity_hash = "cbc68640"
+skeleton_hash = "493983ac"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "38"
+  hash = "b8971daf"
+  quote = "Class 0 comes first: it has objective tests, so it can be decided without"
+  note = "metadiscourse's class 0 is the same tier: iteration artifacts with objective tests"
+
+[[claim]]
+id = "21d9dec73305"
+file = "README.md"
+line = 518
+text = "If your rules say that stated and inferred are never blurred, your evidence tags are load-bearing."
+identity_hash = "efea06ed"
+skeleton_hash = "9ff066fb"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "65"
+  hash = "86e3d9ef"
+  quote = "Write down what you find as **protected**, and say so in the report. If a"
+
+[[claim]]
+id = "29961a02f6d1"
+file = "README.md"
+line = 393
+text = "Open the environment settings at [claude.ai/code](https://claude.ai/code) and put this in **Setup script**:"
+identity_hash = "f3b71adc"
+skeleton_hash = "f3b71adc"
+class = "F"
+verdict = "unsupported"
+note = "points at a page outside the repository; fetching was not attempted, so the tree cannot settle it."
+searched = ["claude.ai/code", "Setup script"]
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "2a3feb3cb8b9"
+file = "README.md"
+line = 262
+text = "**Day one is green.** `init` grandfathers the existing backlog as exempt and marks nothing supported, so adoption costs one command and one commit — the same move as `cargo vet init`'s exemptions and ESLint's bulk suppressions."
+identity_hash = "fff47ca8"
+skeleton_hash = "fff47ca8"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "690"
+  hash = "ebb3eb59"
+  quote = "entry.update({\"verdict\": \"unverified\", \"exempt\": True,"
+  note = "every claim init writes is unverified and exempt; no code path in init sets supported"
+
+[[claim]]
+id = "2b4d34e1cd45"
+file = "README.md"
+line = 191
+text = "A link to a file that was never created — the one fabrication tell with a fully objective test, so the scanner checks it against the filesystem:"
+identity_hash = "b94a0a56"
+skeleton_hash = "9ff066fb"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/scripts/scan.py"
+  lines = "461"
+  hash = "6c132fd0"
+  quote = "def phantom_links(prose, path):"
+  note = "resolves each relative link against the filesystem"
+
+[[claim]]
+id = "2b89925f3465"
+file = "README.md"
+line = 166
+text = "Caveats are never cut, only moved: a risk or a hedge is content, and the failure is that it interrupts the sentence you came for instead of sitting in a footnote."
+identity_hash = "00e007b8"
+skeleton_hash = "843c48ef"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/SKILL.md"
+  lines = "238"
+  hash = "71ff5b7b"
+  quote = "a caveat to Move, not delete)"
+
+[[claim]]
+id = "30dba78c80d1"
+file = "README.md"
+line = 94
+text = "Run lie-detector last, after the register is gone: a cleanup audit will happily strip the wrapper off a false claim — \"leverages a robust 30-second timeout\" becomes \"the timeout is 30 seconds\", tidier and still wrong — and a fact-check over cleaned text produces findings about facts rather than adjectives."
+identity_hash = "9b897288"
+skeleton_hash = "63ef33a0"
+class = "A"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "359"
+  hash = "5657a7c3"
+  quote = "## Scoping"
+  note = "the composition rule is stated in both audits' Scoping sections; a class 1/2 Fold keeps the number and drops the wrapper, which is the failure the ordering avoids"
+
+[[claim]]
+id = "31255dadf25d"
+file = "README.md"
+line = 445
+text = "Python 3 standard library, no dependencies, no install step:"
+identity_hash = "02485848"
+skeleton_hash = "336e3c37"
+class = "D"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "27-35"
+  hash = "49445882"
+  quote = "import argparse"
+  note = "every import across all four scripts is stdlib: argparse, datetime, hashlib, json, math, os, re, subprocess, sys, collections, urllib.parse"
+
+[[claim]]
+id = "31aa67146118"
+file = "CLAUDE.md"
+line = 83
+text = "`ledger.py` also parses its own TOML below Python 3.11, so any new field must round-trip through both readers: `test_ledger.py` pins that."
+identity_hash = "c8856d42"
+skeleton_hash = "ee44ceb8"
+class = "D"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/test_ledger.py"
+  lines = "75"
+  hash = "84604a61"
+  quote = "ledger._tomllib = None"
+  note = "the round trip is run through the fallback parser as well as the stdlib one"
+
+[[claim]]
+id = "335cb9e0c732"
+file = "README.md"
+line = 402
+text = "The `|| true` matters more: a setup script that exits non-zero stops the session from starting at all."
+identity_hash = "2b887fea"
+skeleton_hash = "921467aa"
+class = "E"
+verdict = "unsupported"
+note = "a claim about what a non-zero setup script does to a cloud session. Not settleable here."
+searched = ["|| true", "setup script", "exit", "the whole tree"]
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "33caa1b1a552"
+file = "README.md"
+line = 524
+text = "`skills/metadiscourse-audit/`, `skills/ai-slop-audit/` and `skills/lie-detector/` are the skills: each `SKILL.md` is the workflow your agent follows, each `references/` file holds the full taxonomy with worked examples and the false-positive families, and each `scripts/scan.py` is the scanner, with its tests beside it. lie-detector carries a second script, `scripts/ledger.py`, which manages the claim ledger — extraction, hashing, staleness, the backlog and the gate are mechanical and live there; reaching a verdict is the skill's job and does not."
+identity_hash = "1b3705b4"
+skeleton_hash = "f988d6cc"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "2"
+  hash = "8050e8b0"
+  quote = "name: ai-slop-audit"
+  note = "each skill directory holds SKILL.md, references/ and scripts/; lie-detector's scripts/ holds two"
+
+[[claim]]
+id = "3d6e92a32266"
+file = "README.md"
+line = 111
+text = "Both end with a **density table** (candidates per 100 lines, per file — where to edit first) and a `clean:` line (what a later rewrite must not regress), and each has a corpus-wide pass no single file can show: repeated superlatives for one, repeated sentences for the other."
+identity_hash = "d2dbb12d"
+skeleton_hash = "73df8973"
+class = "A"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/scripts/scan.py"
+  lines = "900"
+  hash = "0ac785d8"
+  quote = "print(\"\\n=== density — candidates per 100 lines ===\")"
+  note = "ai-slop's scan.py prints the same table and a clean: line; both were grepped"
+
+[[claim]]
+id = "435bb17f5dc8"
+file = "CLAUDE.md"
+line = 78
+text = "`identity_key()` decides which claim an entry *is*, and `skeleton()` decides when a verdict goes stale; changing either silently re-keys or re-stales every ledger in the wild."
+identity_hash = "408f620e"
+skeleton_hash = "c97e806c"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-01T21:03:33Z"
+verified_by = "claude-opus-5"
+revision = "0d0b54c"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  symbol = "identity_key"
+  lines = "286"
+  hash = "aafffeab"
+  quote = "def identity_key(text):"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  symbol = "validate_verdict"
+  lines = "1010"
+  hash = "b8d86c10"
+  quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
+  note = "the never-accept-a-verdict-without-evidence half of the same claim"
+
+[[claim]]
+id = "49ec7768810a"
+file = "README.md"
+line = 235
+text = "What no scan can check, the skill does with the code open: generated prose asserts with equal confidence what it verified and what it assumed, so the load-bearing claims get checked against the code, and a documented feature that doesn't exist leads the report — it outranks fifty \"seamlessly\"s."
+identity_hash = "b01abfa5"
+skeleton_hash = "db907db7"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "144"
+  hash = "90a7fe5c"
+  quote = "## Step 4 — verify the claims no scan can"
+
+[[claim]]
+id = "4aec42ebe795"
+file = "README.md"
+line = 294
+text = "**It offers to wire itself in.** If nothing in `AGENTS.md` or `CLAUDE.md` mentions the ledger, `init` prints the block that tells future sessions to verify their own claims — and prints it rather than writing it, because the file that governs how every agent behaves in your repo is not a side effect."
+identity_hash = "82389cf0"
+skeleton_hash = "aba3b808"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "613"
+  hash = "f9f77d6c"
+  quote = "def wiring_reference(root=\".\", ledger_path=DEFAULT_LEDGER):"
+  note = "init calls this and prints the block; apply_wiring only runs behind --wire"
+
+[[claim]]
+id = "4f26fc9b8e10"
+file = "README.md"
+line = 268
+text = "**Nothing is maintained by hand.** Every run re-derives the claim set from the documents and diffs it against the ledger, so a doc edit cannot escape unnoticed — it is new, stale, or an orphan."
+identity_hash = "884841cd"
+skeleton_hash = "f3332887"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "407"
+  hash = "cf8b9d65"
+  quote = "def compare(entries, ledger, root=\".\"):"
+  note = "entries come from a fresh extract() on every run; the ledger is only the other side of the diff"
+
+[[claim]]
+id = "581bd6e9682a"
+file = "CLAUDE.md"
+line = 9
+text = "The scanner over-reports by design, so a verdict on each candidate needs someone deciding what the surviving fact is."
+identity_hash = "b919bf3a"
+skeleton_hash = "6e340b9c"
+class = "D"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/scripts/scan.py"
+  lines = "5"
+  hash = "56b293a2"
+  quote = "class; a reader still decides. Deliberately over-reports — a false positive"
+
+[[claim]]
+id = "5843d575e704"
+file = "README.md"
+line = 164
+text = "And the one that only shows up across a whole doc set: four different files each claiming to hold the single most important thing."
+identity_hash = "53820cd6"
+skeleton_hash = "ba46a94e"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/scripts/scan.py"
+  lines = "653"
+  hash = "22ea536c"
+  quote = "def collisions(findings):"
+  note = "the corpus-wide pass that finds one superlative claimed in several files"
+
+[[claim]]
+id = "64e9c1ccd067"
+file = "README.md"
+line = 512
+text = "It will not tell you a doc set is accurate either: full coverage says every claim was examined, not that the examining was infallible."
+identity_hash = "43e017c2"
+skeleton_hash = "40c66856"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "906"
+  hash = "c01848f3"
+  quote = "print(\"\\n%d blocking, %d advisory. Coverage %d%% (%d/%d verified).\""
+  note = "the only summary the tool emits is coverage; no code path reports accuracy"
+
+[[claim]]
+id = "6a44d48364cf"
+file = "README.md"
+line = 272
+text = "**Only what moved is re-verified**, which is what makes checking every claim affordable."
+identity_hash = "ae8e8d7c"
+skeleton_hash = "f8afa820"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "422"
+  hash = "50ddb552"
+  quote = "if prior.get(\"skeleton_hash\") != entry[\"skeleton_hash\"]:"
+  note = "a claim is re-verified only when its skeleton or its evidence hash moved"
+
+[[claim]]
+id = "6b78079728d9"
+file = "CLAUDE.md"
+line = 78
+text = "Nine claims sit at `unsupported`, all of them about Claude Code's cloud environment, which no checkout can settle."
+identity_hash = "98f06f79"
+skeleton_hash = "01d07f4c"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:07:17Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = ".claims.toml"
+  lines = "1"
+  hash = "df364626"
+  quote = "# Written by lie-detector. One entry per factual claim, with the"
+  note = "nine entries carry verdict = \"unsupported\", every one of them a claim about Claude Code's cloud environment; counted from this file"
+
+[[claim]]
+id = "6d8b08a77f35"
+file = "README.md"
+line = 439
+text = "Each `SKILL.md` is plain Markdown with YAML frontmatter and no tool-specific syntax, so nothing needs translating."
+identity_hash = "45b22e5d"
+skeleton_hash = "c2b33df5"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "1-2"
+  hash = "3e832ab7"
+  quote = "---"
+  note = "all three SKILL.md files open with YAML frontmatter and contain no tool-specific directives"
+
+[[claim]]
+id = "719a12a55eaf"
+file = "CLAUDE.md"
+line = 74
+text = "If you touch `blocks()`, `normalise()` or the claim id, say so in the commit: every published audit's `--verify` stops reproducing when a claim id moves."
+identity_hash = "ad3fd258"
+skeleton_hash = "ff2952e1"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/scan.py"
+  lines = "288"
+  hash = "6c9b3af6"
+  quote = "def normalise(text):"
+  note = "normalise and blocks feed the claim id, which the ticket is derived from; moving any of them changes what --verify recomputes"
+
+[[claim]]
+id = "7976eb21fb79"
+file = "README.md"
+line = 479
+text = "`--code` extends a scan to source-file comments; a source file named on the command line needs no flag."
+identity_hash = "ba8ae3fc"
+skeleton_hash = "13e984c9"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-01T21:03:33Z"
+verified_by = "claude-opus-5"
+revision = "0d0b54c"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/scripts/scan.py"
+  symbol = "collect"
+  lines = "869"
+  hash = "d6c2d72e"
+  quote = "elif p.endswith((\".md\", \".markdown\")) or comment_syntax(p):"
+  note = "a named source file is collected without --code; the walk above it takes code only when include_code is set"
+
+[[claim]]
+id = "7c88fab66145"
+file = "README.md"
+line = 107
+text = "Projects encode conventions that *require* text an audit would otherwise strip — evidence tags, versioned rule sets, emoji used as a declared system, a marketing page whose register was chosen."
+identity_hash = "86040b71"
+skeleton_hash = "6e340b9c"
+class = "D"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "65"
+  hash = "86e3d9ef"
+  quote = "Write down what you find as **protected**, and say so in the report. If a"
+
+[[claim]]
+id = "7d689f595c21"
+file = "CLAUDE.md"
+line = 46
+text = "`repo-c` is the same arrangement for `ai-slop-audit`: `CLAUDE.md` clean, `docs/` and the comments in `src/` dirty, with the phantom links (`configuration.md`, `deploy.md`) broken on purpose."
+identity_hash = "8f11fb34"
+skeleton_hash = "8f11fb34"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "evals/fixtures/repo-c/docs/setup.md"
+  lines = "23"
+  hash = "5d5a393f"
+  quote = "[the configuration reference](./configuration.md) for the full option list."
+
+  [[claim.evidence]]
+  file = "evals/fixtures/repo-c/docs/architecture.md"
+  lines = "18"
+  hash = "90dc6724"
+  quote = "scheduler shard. For deployment, see [the deployment guide](./deploy.md)."
+  note = "both link targets are absent from the fixture on purpose"
+
+[[claim]]
+id = "82fce89e859a"
+file = "CLAUDE.md"
+line = 104
+text = "Touch them only deliberately, and never make `record` accept a verdict that cites no evidence — that check is the reason a ledger is worth more than an assertion."
+identity_hash = "ce8fe393"
+skeleton_hash = "2e167a5b"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:07:17Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "1010"
+  hash = "b8d86c10"
+  quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
+  note = "the check the instruction refers to; identity_key and skeleton are at 286 and 275"
+
+[[claim]]
+id = "8893e942db68"
+file = "CLAUDE.md"
+line = 17
+text = "Pointing the scanner at the file directly exits 2 with `no standing markdown found` — that is the exclusion firing, not a clean result."
+identity_hash = "093c291d"
+skeleton_hash = "22fdf058"
+class = "E"
+verdict = "supported"
+verified_at = "2026-09-01T21:03:33Z"
+verified_by = "claude-opus-5"
+revision = "0d0b54c"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/scripts/scan.py"
+  symbol = "main"
+  lines = "799"
+  hash = "3a42ca36"
+  quote = "print(\"no standing markdown found\" + note, file=sys.stderr)"
+  note = "confirmed by running it: scan.py README.md exits 2 with that line"
+
+[[claim]]
+id = "8be0c524e485"
+file = "CLAUDE.md"
+line = 72
+text = "`lie-detector`'s draw has to stay reproducible across machines and Python versions, so nothing in its sampling path may depend on set iteration, dictionary insertion order or the order a filesystem walk returns files."
+identity_hash = "b03fb38d"
+skeleton_hash = "b03fb38d"
+class = "D"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/scan.py"
+  lines = "506"
+  hash = "be8cad8a"
+  quote = "def draw(claims, seed, n):"
+  note = "the draw sorts on a sha256 ticket, and collect() sorts the file list, so neither set iteration nor walk order reaches it"
+
+[[claim]]
+id = "9498a486b3e7"
+file = "CLAUDE.md"
+line = 51
+text = "`repo-d` is planted for `lie-detector`, and the plant is a disagreement rather than a mess: `docs/` documents a 30-second timeout, five retries and a parked-batch report written on every failure, while `src/relay.py` holds `TIMEOUT_SECONDS = 10`, `MAX_RETRIES = 3` and writes that report from a nightly job."
+identity_hash = "d9092dc2"
+skeleton_hash = "1152f4a2"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "evals/fixtures/repo-d/src/relay.py"
+  lines = "3-5"
+  hash = "147614c9"
+  quote = "BATCH_SIZE = 500"
+  note = "TIMEOUT_SECONDS = 10 and MAX_RETRIES = 3 sit at lines 4 and 5, against docs claiming 30 seconds and five retries"
+
+  [[claim.evidence]]
+  file = "evals/fixtures/repo-d/docs/relay.md"
+  lines = "16"
+  hash = "ea28d701"
+  quote = "Relay retries a failed flush 5 times before parking the batch, and the"
+
+[[claim]]
+id = "9553343ebd4a"
+file = "README.md"
+line = 347
+text = "`--fix --dry-run` shows the mechanical subset before anything is applied."
+identity_hash = "85a316cb"
+skeleton_hash = "49aac519"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/scripts/scan.py"
+  lines = "353"
+  hash = "a1698af7"
+  quote = "of a plain scan so the mechanical subset is discoverable from the output"
+
+[[claim]]
+id = "987a2e46a84e"
+file = "README.md"
+line = 286
+text = "**`record` enforces what each verdict owes.** There are four — supported, refuted, unsupported, unverifiable — and the rules are refusals: a supported verdict must quote evidence that is really at the line it cites, a refuted one must carry the correction, an unsupported one must record what was searched."
+identity_hash = "ce8fe393"
+skeleton_hash = "fef0e0ee"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "43"
+  hash = "a877ac9f"
+  quote = "VERDICTS = (\"unverified\", \"supported\", \"refuted\", \"unsupported\", \"unverifiable\")"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "1010"
+  hash = "b8d86c10"
+  quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
+  note = "the rules are refusals: validate_verdict raises rather than warns"
+
+[[claim]]
+id = "9e80e15a4ad8"
+file = "README.md"
+line = 421
+text = "`AGENTS.md` is the portable route — Codex, Cursor, Copilot, Gemini CLI, Aider, Windsurf and Zed all read it."
+identity_hash = "9f9ad077"
+skeleton_hash = "d9abb79e"
+class = "B"
+verdict = "unsupported"
+note = "a claim about seven third-party tools' behaviour. Nothing in this repository can settle it, and it was not checked against any of their documentation."
+searched = ["AGENTS.md", "Codex", "Cursor", "Copilot", "Gemini", "Aider", "Windsurf", "Zed", "the whole tree"]
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "a2390aa64bb9"
+file = "CLAUDE.md"
+line = 36
+text = "The rate here runs well above the one-in-three the skill warns about generally, so triage every candidate against the surrounding paragraph rather than the line alone."
+identity_hash = "c4e8e599"
+skeleton_hash = "fd992552"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/SKILL.md"
+  lines = "136"
+  hash = "18207db8"
+  quote = "not findings**. Expect to discard roughly a third"
+  note = "CLAUDE.md's 'one-in-three the skill warns about' is this line"
+
+[[claim]]
+id = "a527b6499031"
+file = "README.md"
+line = 76
+text = "The two cleanup scanners print candidates by `file:line`, ending with how many `--fix` can rewrite mechanically; `ledger.py init` enrols the claims it finds and prints the backlog, with no `--fix` to offer."
+identity_hash = "ad7304ec"
+skeleton_hash = "e78c4163"
+class = "B"
+verdict = "supported"
+supersedes = "e27fc6cd21e7"
+verified_at = "2026-09-01T21:04:24Z"
+verified_by = "claude-opus-5"
+revision = "0d0b54c"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  symbol = "cmd_init"
+  lines = "714"
+  hash = "f6417271"
+  quote = "print(\"Extracting claims from %d file(s)...\\n\" % len(files))"
+  note = "init prints an enrolment summary and backlog; no --fix exists on either lie-detector script"
+
+[[claim]]
+id = "a8fe8ee56de5"
+file = "README.md"
+line = 350
+text = "`repo-d` is planted for the lie detector, and its plant is a disagreement rather than a mess: the docs state a 30-second timeout, five retries and a report written on every failure, while `src/relay.py` holds `10`, `3` and a nightly job."
+identity_hash = "f4a06ec8"
+skeleton_hash = "5765d271"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "evals/fixtures/repo-d/docs/relay.md"
+  lines = "10"
+  hash = "5b5f04f5"
+  quote = "| `--timeout` | 30 seconds | How long a sink may take |"
+
+  [[claim.evidence]]
+  file = "evals/fixtures/repo-d/src/relay.py"
+  lines = "4"
+  hash = "f9aa7697"
+  quote = "TIMEOUT_SECONDS = 10"
+
+[[claim]]
+id = "ac37f727f52d"
+file = "README.md"
+line = 331
+text = "The tail is the part that only works corpus-wide — collisions, density, and the clean list:"
+identity_hash = "f523abd5"
+skeleton_hash = "ba46a94e"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:06:01Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/scripts/scan.py"
+  lines = "869"
+  hash = "1e6e2ff1"
+  quote = "coll = collisions(findings)"
+  note = "the tail of a run prints collisions, then the density table at 900, then the clean list"
+
+[[claim]]
+id = "b29d02a7c5ae"
+file = "README.md"
+line = 290
+text = "A ledger of rubber-stamped verdicts is worse than none, because it launders assumption as evidence."
+identity_hash = "afbd7b74"
+skeleton_hash = "fdbb9db6"
+class = "C"
+verdict = "unverifiable"
+note = "the rationale for the honesty rules, not a claim about the system: no evidence could make 'worse than none' true or false."
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "b455d13badbd"
+file = "README.md"
+line = 421
+text = "Clone the repository somewhere your agent can see, then point at the skills from your `AGENTS.md`:"
+identity_hash = "b58321fa"
+skeleton_hash = "b58321fa"
+class = "B"
+verdict = "unverifiable"
+note = "an instruction to the reader, not an assertion about the system."
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "bc7e2aff6fef"
+file = "README.md"
+line = 441
+text = "Cursor's own `.cursor/rules/*.mdc` format expects MDC files rather than a skill directory, so use the `AGENTS.md` route there too — Cursor reads it natively."
+identity_hash = "a6d130ad"
+skeleton_hash = "a6d130ad"
+class = "B"
+verdict = "unsupported"
+note = "a claim about Cursor's rule format. No .cursor/rules directory exists here and the tree says nothing about MDC."
+searched = [".cursor", "mdc", "cursor", "the whole tree"]
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "bc8891c74ade"
+file = "CLAUDE.md"
+line = 91
+text = "Bump `version` in both `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` together when the skill changes; CI fails if they drift."
+identity_hash = "601a0a95"
+skeleton_hash = "601a0a95"
+class = "E"
+verdict = "supported"
+verified_at = "2026-09-02T12:07:17Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = ".github/workflows/ci.yml"
+  lines = "319"
+  hash = "927d5900"
+  quote = "f\"{name}: marketplace version {entry['version']} does not \""
+  note = "re-cited: adding the claims job moved this line from 303 to 319, which is what staled the verdict"
+
+[[claim]]
+id = "bcd0eddc76fe"
+file = "README.md"
+line = 439
+text = "The `references/` files are loaded on demand, only when a finding is ambiguous."
+identity_hash = "c6b53dc6"
+skeleton_hash = "6e46b342"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "284"
+  hash = "1e5f7034"
+  quote = "read `references/patterns.md`. Read it when a finding is ambiguous; the"
+
+[[claim]]
+id = "bd28355f3fee"
+file = "README.md"
+line = 387
+text = "Pass `--project` to install into the current repo instead, `--link` to symlink so `git pull` updates them in place, or `--uninstall` to remove them."
+identity_hash = "f43f8857"
+skeleton_hash = "f43f8857"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "install.sh"
+  lines = "36"
+  hash = "dafe2b69"
+  quote = "--project)   DEST=\"$(pwd)/.claude/skills\" ;;"
+
+  [[claim.evidence]]
+  file = "install.sh"
+  lines = "39-40"
+  hash = "8adfbea3"
+  quote = "--link)      MODE=\"link\" ;;"
+
+[[claim]]
+id = "c3ed14902162"
+file = "README.md"
+line = 166
+text = "Cross-references stay while the status claims around them go — `(issue #14)` never rots, and \"has not been made\" is the part only the tracker knows."
+identity_hash = "fe7defb6"
+skeleton_hash = "c5ffb3b9"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/SKILL.md"
+  lines = "200"
+  hash = "cd18b818"
+  quote = "**Keep cross-references; cut the status claims around them.**"
+  note = "the skill's example is (issue #22); the README quotes (issue #14) from the repo-a fixture"
+
+[[claim]]
+id = "c76a8cdb3362"
+file = "README.md"
+line = 290
+text = "Absence of evidence is `unsupported`, never `refuted`."
+identity_hash = "63cce288"
+skeleton_hash = "97bf7485"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "1010"
+  hash = "b8d86c10"
+  quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
+  note = "an evidence-free supported is rejected and redirected to unsupported; no path turns absence into refuted"
+
+[[claim]]
+id = "cc17fc7566d5"
+file = "README.md"
+line = 111
+text = "Only then does it scan."
+identity_hash = "5b9f3731"
+skeleton_hash = "ba46a94e"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "65"
+  hash = "86e3d9ef"
+  quote = "Write down what you find as **protected**, and say so in the report. If a"
+  note = "step 1 (conventions) and step 2 (records) both precede step 3 (scan)"
+
+[[claim]]
+id = "cf128b0d1571"
+file = "README.md"
+line = 265
+text = "From that moment the gate enforces on anything *new*: a claim you add, or one you edit, needs a verdict before the build passes."
+identity_hash = "3acb6836"
+skeleton_hash = "37d9c830"
+class = "D"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "844"
+  hash = "810649de"
+  quote = "rows.append((\"FAIL\", entry, \"new claim, no verdict\"))"
+  note = "new claims block; an edited claim loses its exemption in the branch below"
+
+[[claim]]
+id = "d8bfb1d7a336"
+file = "README.md"
+line = 387
+text = "That installs every skill to `~/.claude/skills/<name>` (pass `--skill metadiscourse-audit` for just one)."
+identity_hash = "11c91992"
+skeleton_hash = "a2882710"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "install.sh"
+  lines = "47"
+  hash = "8c9a8fa5"
+  quote = "[ -n \"$DEST\" ] || DEST=\"$HOME/.claude/skills\""
+
+  [[claim.evidence]]
+  file = "install.sh"
+  lines = "38"
+  hash = "d01d754b"
+  quote = "--skill)     shift;"
+  note = "--skill NAME narrows the install to one skill"
+
+[[claim]]
+id = "dcc0fa2407ae"
+file = "CLAUDE.md"
+line = 5
+text = "`README.md` and `evals/README.md` are the standing prose documents here."
+identity_hash = "362e9f4b"
+skeleton_hash = "362e9f4b"
+class = "B"
+verdict = "supported"
+supersedes = "e4891a1eacac"
+verified_at = "2026-09-02T12:06:01Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "evals/README.md"
+  lines = "1"
+  hash = "054dc9f3"
+  quote = "# Evals"
+  note = "the two standing prose documents are README.md and evals/README.md; everything else under skills/ is skill text and everything under evals/fixtures/ is planted"
+
+[[claim]]
+id = "de054205b588"
+file = "README.md"
+line = 402
+text = "The `PATH` fallback is there because setup scripts run as root under a non-login shell, where `claude` is not otherwise found."
+identity_hash = "9c60492f"
+skeleton_hash = "c2572d77"
+class = "B"
+verdict = "unsupported"
+note = "a claim about how Claude Code's cloud environment runs setup scripts. Not settleable from this repository."
+searched = ["PATH", "/opt/claude-code", "setup script", "non-login shell", "the whole tree"]
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "de95968c60cc"
+file = "README.md"
+line = 406
+text = "To scope the skills to one repository rather than every cloud session, commit the same two keys to that repository's `.claude/settings.json`:"
+identity_hash = "1ae8a6df"
+skeleton_hash = "4f584e70"
+class = "C"
+verdict = "unsupported"
+note = "the two keys are documented here but no settings.json in this repo exercises them; whether they scope a plugin is Claude Code's behaviour, not this tree's."
+searched = [".claude/settings.json", "extraKnownMarketplaces", "enabledPlugins", "the whole tree"]
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "deece67dbeb8"
+file = "README.md"
+line = 506
+text = "`--fix` applies only the rewrites whose removal cannot lose a fact: stripping a \"worth …\" wrapper, deleting a pleasantry line, removing emoji from a heading."
+identity_hash = "340c7329"
+skeleton_hash = "27986ffe"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-01T21:03:33Z"
+verified_by = "claude-opus-5"
+revision = "0d0b54c"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/scripts/scan.py"
+  symbol = "main"
+  lines = "929-931"
+  hash = "53ec37e6"
+  quote = "Never rewrite a source file. Comment extraction is heuristic,"
+  note = "--fix skips any file with comment_syntax, so comment findings stay report-only"
+
+[[claim]]
+id = "e31765689731"
+file = "CLAUDE.md"
+line = 61
+text = "`.claims.toml` records every factual claim in `README.md` and `CLAUDE.md` with the evidence that settled it, and CI gates on it."
+identity_hash = "64bc7b61"
+skeleton_hash = "444e5c75"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:07:17Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = ".github/workflows/ci.yml"
+  lines = "264"
+  hash = "07c7d13f"
+  quote = "run: python3 skills/lie-detector/scripts/ledger.py check --ledger .claims.toml"
+  note = "the ledger is gated in CI; the file itself holds one entry per claim in the two documents"
+
+[[claim]]
+id = "e6220349a57e"
+file = "README.md"
+line = 47
+text = "Enrol every claim in `docs/` in a ledger, wire the gate into CI, and start working the backlog."
+identity_hash = "0a6ea8f7"
+skeleton_hash = "bb2d9004"
+class = "C"
+verdict = "unverifiable"
+note = "a quoted example prompt in the Quickstart — words a user might type, not a claim the repository makes."
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "e63331b28f32"
+file = "README.md"
+line = 50
+text = "Every finding comes back as `file:line`, the verbatim text, a class, a verdict, and the rewrite."
+identity_hash = "5032d2da"
+skeleton_hash = "e83a243c"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/scripts/scan.py"
+  lines = "890"
+  hash = "e0c2338a"
+  quote = "print(f\"{f['file']}:{f['line']}  [{f['label']}]\")"
+  note = "the scanner supplies file:line, text and class; the verdict and rewrite come from the skill's report format, so the sentence describes the audit rather than the script alone"
+
+[[claim]]
+id = "ee7360e00434"
+file = "README.md"
+line = 107
+text = "Each of the two starts by reading your project's own rules — `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `.cursorrules`, a style guide, whatever you use."
+identity_hash = "3f1c653a"
+skeleton_hash = "3f1c653a"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/SKILL.md"
+  lines = "47"
+  hash = "91effd7c"
+  quote = "rules — `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `.cursorrules`,"
+  note = "ai-slop's step 1 (SKILL.md:53) names the same files minus .cursorrules; the README's list is illustrative and ends in 'whatever you use'"
+
+[[claim]]
+id = "ef5ff1ca0c21"
+file = "CLAUDE.md"
+line = 73
+text = "`record` rejects a supported or refuted verdict that quotes no evidence, and rejects a quote that is not at the line it cites — do not work around that, it is the only thing making the ledger worth more than an assertion."
+identity_hash = "ce8fe393"
+skeleton_hash = "7c701802"
+class = "C"
+verdict = "supported"
+note = "an instruction to future contributors, not an assertion about the system: no evidence could make 'touch them only deliberately' true or false."
+verified_at = "2026-09-02T12:07:17Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "1010"
+  hash = "b8d86c10"
+  quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "1036"
+  hash = "b5a48285"
+  quote = "raise RecordError(\"quoted text is not at %s:%s — the citation does \""
+  note = "the second refusal: a quote that is not at the line it cites"
+
+[[claim]]
+id = "f12d8ddca70d"
+file = "README.md"
+line = 90
+text = "Docs a coding agent generated or heavily edited — chat turns committed as documentation, completion reports, links to files that were never created, \"comprehensive\" on every page — is ai-slop-audit's."
+identity_hash = "4381ab6d"
+skeleton_hash = "12223b87"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "144"
+  hash = "90a7fe5c"
+  quote = "## Step 4 — verify the claims no scan can"
+  note = "chat residue, completion reports and phantom links are classes 0a-0d of this skill"
+
+[[claim]]
+id = "f1a9344c9be3"
+file = "README.md"
+line = 391
+text = "`/plugin` is a terminal command, so cloud sessions cannot install anything interactively, and `~/.claude` does not carry over from your machine."
+identity_hash = "1422811a"
+skeleton_hash = "3529ddff"
+class = "C"
+verdict = "unsupported"
+note = "a claim about where /plugin works and what carries over to a cloud session. Not settleable here."
+searched = ["/plugin", "~/.claude", "cloud", "the whole tree"]
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "f34631cf22ea"
+file = "README.md"
+line = 109
+text = "A document is either the events or a projection of them, never both."
+identity_hash = "cc04dbbb"
+skeleton_hash = "9ff066fb"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/SKILL.md"
+  lines = "73"
+  hash = "256b65e2"
+  quote = "## Step 2 — events or projection, never both"
+
+[[claim]]
+id = "f5ea24e1519d"
+file = "CLAUDE.md"
+line = 42
+text = "`evals/fixtures/` is planted deliberately, and CI depends on it staying that way: `repo-a/CLAUDE.md` is clean by construction, and `repo-a/docs/` and the comments in `repo-a/src/` are dirty by construction, which is how the metadiscourse scanner's exit codes are pinned — including `--code`'s."
+identity_hash = "0768fa76"
+skeleton_hash = "0768fa76"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = ".github/workflows/ci.yml"
+  lines = "50"
+  hash = "f5b09867"
+  quote = "- name: A clean file exits 0"
+  note = "the pinned exit codes read repo-a/CLAUDE.md as clean and repo-a/docs as dirty; the --code steps below do the same for its src/"
+
+[[claim]]
+id = "f993e82a81fc"
+file = "README.md"
+line = 506
+text = "It never rewrites a source file — comment extraction is heuristic, so those findings stay in human hands."
+identity_hash = "27118dd6"
+skeleton_hash = "9ff066fb"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:03:34Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/scripts/scan.py"
+  lines = "929"
+  hash = "a2e00a35"
+  quote = "Never rewrite a source file. Comment extraction is heuristic,"
+
+[[claim]]
+id = "f9a26693698b"
+file = "README.md"
+line = 61
+text = "And point either audit at a **doc set**, not one file: the corpus-wide passes and the density ranking only mean anything across a corpus, and they are the outputs that tell you where to edit next."
+identity_hash = "261c00d0"
+skeleton_hash = "2482aed2"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "359"
+  hash = "5657a7c3"
+  quote = "## Scoping"
+  note = "both cleanup skills' Scoping sections say to audit a doc set, because echoes and density are corpus-wide"
+
+[[claim]]
+id = "faec26467dfc"
+file = "README.md"
+line = 402
+text = "It resolves through `command -v` first, so it does nothing on an image that already puts `claude` on the path, and the directory it falls back to carries no version in its name."
+identity_hash = "a04c4b31"
+skeleton_hash = "3142bd90"
+class = "E"
+verdict = "unsupported"
+note = "same environment claim: whether the fallback directory carries no version in its name is a fact about the image, not about this tree."
+searched = ["command -v", "/opt/claude-code/bin", "the whole tree"]
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+[[claim]]
+id = "ff7ad4ecdb39"
+file = "CLAUDE.md"
+line = 15
+text = "A document about metadiscourse quotes metadiscourse on nearly every line, and scanning it in place buries real findings under its own vocabulary."
+identity_hash = "93d54bae"
+skeleton_hash = "fd992552"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T12:04:39Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/metadiscourse-audit/scripts/scan.py"
+  lines = "717"
+  hash = "ee8fd7a8"
+  quote = "Also worth excluding: a document *about* metadiscourse quotes metadiscourse"
+
+[[claim]]
+id = "ffe46a3e5efc"
+file = "README.md"
+line = 454
+text = "The corpus arguments (`docs`, `README.md`) resolve against your working directory, not against the clone — which is why the scripts are addressed by absolute path and the corpus by relative one:"
+identity_hash = "dc485a04"
+skeleton_hash = "cd903fd7"
+class = "B"
+verdict = "supported"
+verified_at = "2026-09-02T12:05:37Z"
+verified_by = "claude-opus-5"
+revision = "2ce1d1e"
+
+  [[claim.evidence]]
+  file = "skills/ai-slop-audit/SKILL.md"
+  lines = "95"
+  hash = "2dfb7595"
+  quote = "**corpus** arguments resolve against your working directory. So stay in the"
+  note = "all three skills state the same convention: scripts addressed absolutely, corpus relative to cwd"
+

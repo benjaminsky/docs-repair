@@ -1089,6 +1089,20 @@ def cmd_record(args):
         except RecordError as exc:
             failed.append((cid, str(exc)))
             continue
+        # A verdict is reached against the sentence as it reads now, so the
+        # entry takes the current text, line and hashes. Without this, a
+        # staled claim stays stale after being re-verified — the ledger keeps
+        # comparing against the wording somebody already replaced.
+        if enrolled is None:
+            opts = corpus_from(ledger, args)
+            enrolled, _, _ = extract(opts["paths"], opts["excludes"],
+                                     opts["include_records"],
+                                     opts["include_code"], root)
+        fresh = enrolled.get(cid)
+        if fresh:
+            for key in ("file", "line", "text", "identity_hash",
+                        "skeleton_hash", "class"):
+                claim[key] = fresh[key]
         claim["verdict"] = item["verdict"]
         claim["verified_at"] = stamp
         claim["verified_by"] = item.get("verified_by") or args.by

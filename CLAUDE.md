@@ -2,8 +2,8 @@
 
 ## Run the audit on every prose change
 
-`README.md` is the only standing prose document here. Everything else is
-either the skill's own text or a planted fixture. When you change it, run the
+`README.md` and `evals/README.md` are the standing prose documents here.
+Everything else is either the skill's own text or a planted fixture. When you change it, run the
 skill against it before committing, and act on what comes back.
 
 CI does not gate this. The scanner over-reports by design, so a verdict on
@@ -55,6 +55,29 @@ a parked-batch report written on every failure, while `src/relay.py` holds
 nightly job. Two of its guarantees are true, and the journal guarantee is
 unsettleable from the tree on purpose — it is what an Unsupported verdict
 is tested against. Do not reconcile the docs with the code there.
+
+## The claim ledger
+
+`.claims.toml` records every factual claim in `README.md` and `CLAUDE.md`
+with the evidence that settled it, and CI gates on it. Editing either
+document means one of three things afterwards, and the gate will tell you
+which:
+
+```bash
+python3 skills/lie-detector/scripts/ledger.py check --ledger .claims.toml
+python3 skills/lie-detector/scripts/ledger.py check --backlog --ledger .claims.toml
+python3 skills/lie-detector/scripts/ledger.py record verdicts.json --by "$(whoami)" --ledger .claims.toml
+```
+
+A reworded sentence holds its verdict; a changed number, unit or quantifier
+does not, and neither does a claim whose cited code moved. `record` rejects
+a supported or refuted verdict that quotes no evidence, and rejects a quote
+that is not at the line it cites — do not work around that, it is the only
+thing making the ledger worth more than an assertion.
+
+Nine claims sit at `unsupported`, all of them about Claude Code's cloud
+environment, which no checkout can settle. That verdict is advisory here on
+purpose; do not "fix" them by inventing evidence.
 
 ## Before committing
 

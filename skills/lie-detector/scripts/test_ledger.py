@@ -423,6 +423,27 @@ class TestCommandLine(unittest.TestCase):
         self.assertIn("enrolled on the way", out)
         self.assertEqual(self.run_cli(root, "check")[0], 0)
 
+    def test_re_verifying_a_staled_claim_clears_it(self):
+        # Recording against the old wording left the entry stale forever: the
+        # ledger kept diffing against a sentence nobody had written since.
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"))
+        led = ledger.load_ledger(os.path.join(root, "docs", ".claims.toml"))
+        cid = next(c["id"] for c in led["claim"] if "batch-size" in c["text"])
+        path = os.path.join(root, "docs", "relay.md")
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read().replace("500 events", "100 events")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        self.assertEqual(self.run_cli(root, "check")[0], 1)
+        verdicts = os.path.join(root, "v.json")
+        with open(verdicts, "w", encoding="utf-8") as fh:
+            json.dump([{"id": cid, "verdict": "unsupported",
+                        "searched": ["BATCH_SIZE", "src/**"]}], fh)
+        self.run_cli(root, "record", verdicts, "--by", "test")
+        code, out = self.run_cli(root, "check")
+        self.assertEqual(code, 0, out)
+
     def test_record_still_rejects_an_id_that_is_nowhere(self):
         root = tree()
         self.run_cli(root, "init", os.path.join(root, "docs"))
