@@ -240,8 +240,27 @@ def dumps(ledger):
 # An anchored claim can be reworded freely and keep its verdict, which the
 # derived key cannot promise — a third of the claims in a real corpus name no
 # identifier at all, and those are keyed on their opening words.
-ANCHOR = re.compile(r"\[\^c([0-9a-f]{8})\]")
+# Two marker forms, because they render differently and the documents want
+# different things. A footnote reference renders as a neat superscript *only
+# when a definition exists*; without one, markdown shows the raw "[^c4e2331]"
+# — which is what makes an unfootnoted document look vandalised. So documents
+# that keep footnotes use the footnote form, and documents that do not (the
+# ones an agent loads every session) use an HTML comment, which renders as
+# nothing at all and costs the same handful of tokens.
+ANCHOR = re.compile(r"\[\^c([0-9a-f]{8})\]|<!--\s*c([0-9a-f]{8})\s*-->")
 ANCHOR_DEF = re.compile(r"^\[\^c([0-9a-f]{8})\]:\s*(.*)$")
+
+
+def anchor_of(match):
+    return match.group(1) or match.group(2)
+
+
+def strip_anchors(text):
+    """Remove real markers, leaving any quoted inside a code span."""
+    outside = scan.INLINE_CODE.sub(lambda m: " " * len(m.group(0)), text)
+    for a, b in reversed([m.span() for m in ANCHOR.finditer(outside)]):
+        text = text[:a] + text[b:]
+    return text
 
 _UNIT = scan.UNIT
 
@@ -400,7 +419,7 @@ def extract(paths, excludes=(), include_records=False, include_code=False,
             if anchored:
                 # The document names its own claim. Reword the sentence
                 # however you like; the verdict follows the anchor.
-                cid = anchored.group(1)
+                cid = anchor_of(anchored)
             else:
                 key = identity_key(text)
                 occurrence = seen[(rel, key)]
@@ -761,6 +780,11 @@ def anchor_id(cid):
     return "c" + cid
 
 
+def marker_for(cid, footnotes):
+    """The visible footnote reference, or the invisible comment."""
+    return "[^c%s]" % cid if footnotes else "<!--c%s-->" % cid
+
+
 def _definition(claim):
     """The footnote a reader sees: what settled this sentence, and when."""
     verdict = claim.get("verdict", "unverified")
@@ -802,11 +826,19 @@ def sync_anchors(doc_path, claims, root=".", footnotes=None):
             break
     body = lines[:end]
 
+    if footnotes is None:
+        footnotes = wants_footnotes(doc_path)
+    # Strip whatever markers are there before writing: a document can change
+    # form (a file added to CONTEXT_DOCS, say), and leaving both would give a
+    # claim two names. Only real markers go — one quoted inside a code span
+    # is prose explaining the scheme, and deleting it edits the document.
+    body = [strip_anchors(line).rstrip() for line in body]
+
     added = 0
     joined = "\n".join(body)
     for n, claims_here in sorted(by_line.items()):
         for claim in claims_here:
-            marker = "[^%s]" % anchor_id(claim["id"])
+            marker = marker_for(claim["id"], footnotes)
             if marker in joined:
                 continue
             # Anchor on the claim's own sentence, not the next one: match the
@@ -815,7 +847,12 @@ def sync_anchors(doc_path, claims, root=".", footnotes=None):
             tail = claim["text"].strip()[-40:]
             probe = re.compile(r"\s+".join(re.escape(w) for w in tail.split()))
             placed = False
-            for j in range(max(0, n - 1), min(len(body), n + 8)):
+            # The recorded line is display-only and drifts when anything is
+            # inserted above it, so it is a hint, not an address: try around
+            # it first, then the whole document.
+            windows = list(range(max(0, n - 1), min(len(body), n + 8)))
+            windows += [j for j in range(len(body)) if j not in windows]
+            for j in windows:
                 window = "\n".join(body[j:j + 3])
                 m = probe.search(window)
                 if not m:
@@ -844,8 +881,6 @@ def sync_anchors(doc_path, claims, root=".", footnotes=None):
                       "where the ledger says it is"
                       % (anchor_id(claim["id"]), doc_path, n), file=sys.stderr)
 
-    if footnotes is None:
-        footnotes = wants_footnotes(doc_path)
     while body and not body[-1].strip():
         body.pop()
     if footnotes:
@@ -1181,10 +1216,27 @@ def cmd_check(args):
 
 
 def _relocate(sidecars, root, args):
-    """Re-address citations whose quote is intact but whose line has moved."""
-    moved, stuck = 0, []
+    """Re-address citations whose quote is intact but whose line has moved.
+
+    Also refreshes each claim's own line number, which drifts whenever
+    anything is inserted above it. Neither is a verdict; both are addresses.
+    """
+    moved, stuck, relined = 0, [], 0
+    opts = corpus_from(sidecars[0][1], args) if sidecars else {}
+    fresh = {}
+    if sidecars:
+        fresh, _, _ = extract([os.path.join(root, doc)
+                               for _, _, doc, _ in sidecars],
+                              opts["excludes"], opts["include_records"],
+                              opts["include_code"], root)
     for rel, led, doc, by_id in sidecars:
         touched = False
+        for claim in led.get("claim", []):
+            now = fresh.get(claim["id"])
+            if now and int(now["line"]) != int(claim.get("line", 0)):
+                claim["line"] = now["line"]
+                relined += 1
+                touched = True
         for claim in led.get("claim", []):
             for ev in claim.get("evidence", []):
                 now = evidence_hash(ev["file"], ev.get("lines", "1"), root)
@@ -1204,7 +1256,9 @@ def _relocate(sidecars, root, args):
             with open(os.path.join(root, rel), "w", encoding="utf-8") as fh:
                 fh.write(dumps(led))
     verb = "would re-address" if args.dry_run else "Re-addressed"
-    print("%s %d citation(s) whose quote had not changed." % (verb, moved))
+    print("%s %d citation(s) whose quote had not changed%s."
+          % (verb, moved,
+             "; %d claim line(s) refreshed" % relined if relined else ""))
     for cid, f in stuck:
         print("  %s: quote is gone from %s — the evidence changed, so this "
               "one needs a person." % (cid, f))

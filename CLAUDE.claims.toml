@@ -2,7 +2,7 @@
 # evidence that settled it. Re-check with: ledger.py check
 schema = 1
 doc = "CLAUDE.md"
-generated_at = "2026-09-02T17:30:38Z"
+generated_at = "2026-09-02T17:38:00Z"
 revision = "8fdc887"
 
 [[claim]]
@@ -26,33 +26,26 @@ revision = "8fdc887"
 
 [[claim]]
 id = "073d0dd0"
-line = 73
-text = "`README.md` also carries the block of definitions saying what settled each one; this file deliberately does not, because it is loaded into every session and the sidecar holds the same provenance."
+line = 74
+text = "`README.md` also carries the block of definitions saying what settled each one; this file deliberately carries neither block nor visible marker, because it is loaded into every session and the sidecar holds the same provenance."
 anchored = true
-skeleton_hash = "0472eff3"
-class = "C"
+skeleton_hash = "3999c2c6"
+class = "B"
 verdict = "supported"
-verified_at = "2026-09-02T17:30:38Z"
+verified_at = "2026-09-02T17:38:00Z"
 verified_by = "claude-opus-5"
-revision = "abfdd6a"
+revision = "899e276"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "756"
+  lines = "775"
   hash = "b5b5643b"
   quote = "def wants_footnotes(doc_path):"
-  note = "CLAUDE.md is in CONTEXT_DOCS, so sync_anchors writes its markers and skips the definitions block"
-
-  [[claim.evidence]]
-  file = "README.claims.toml"
-  lines = "2"
-  hash = "8afdbf5d"
-  quote = "# evidence that settled it. Re-check with: ledger.py check"
-  note = "the sidecar holds the same provenance the block would have shown"
+  note = "CLAUDE.md is in CONTEXT_DOCS, so it gets neither the definitions block nor a visible marker"
 
 [[claim]]
 id = "31aa6714"
-line = 106
+line = 122
 text = "`ledger.py` also parses its own TOML below Python 3.11, so any new field must round-trip through both readers: `test_ledger.py` pins that."
 anchored = true
 skeleton_hash = "ee44ceb8"
@@ -70,8 +63,27 @@ revision = "8fdc887"
   note = "the round trip is run through the fallback parser as well as the stdlib one"
 
 [[claim]]
+id = "33ff1498"
+line = 72
+text = "Every claim here is **anchored**: the sentence carries its own id, as an invisible HTML comment here and as a markdown footnote (`[^c4e233156]`) in `README.md`."
+anchored = false
+skeleton_hash = "34cf40f3"
+class = "C"
+verdict = "supported"
+verified_at = "2026-09-02T17:38:00Z"
+verified_by = "claude-opus-5"
+revision = "899e276"
+
+  [[claim.evidence]]
+  file = "skills/lie-detector/scripts/ledger.py"
+  lines = "783"
+  hash = "32f30315"
+  quote = "def marker_for(cid, footnotes):"
+  note = "returns the footnote reference when a document keeps footnotes and the HTML comment when it does not"
+
+[[claim]]
 id = "435bb17f"
-line = 113
+line = 117
 text = "`identity_key()` decides which claim an entry *is*, and `skeleton()` decides when a verdict goes stale; changing either silently re-keys or re-stales every ledger in the wild."
 anchored = true
 skeleton_hash = "c97e806c"
@@ -84,21 +96,21 @@ revision = "8fdc887"
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
   symbol = "identity_key"
-  lines = "294"
+  lines = "313"
   hash = "aafffeab"
   quote = "def identity_key(text):"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
   symbol = "validate_verdict"
-  lines = "1332"
+  lines = "1386"
   hash = "b8d86c10"
   quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
   note = "the never-accept-a-verdict-without-evidence half of the same claim"
 
 [[claim]]
 id = "454420bc"
-line = 84
+line = 86
 text = "When a refactor moves code that claims cite, `check --relocate` re-addresses the citations whose quote is unchanged; it touches line numbers, never a verdict."
 anchored = false
 skeleton_hash = "8577fa15"
@@ -110,7 +122,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1183"
+  lines = "1218"
   hash = "19aade43"
   quote = "def _relocate(sidecars, root, args):"
   note = "it rewrites ev[\"lines\"] and ev[\"hash\"] only; no verdict field is touched"
@@ -135,7 +147,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "6b780797"
-line = 78
+line = 94
 text = "Nine claims sit at `unsupported`, all of them about Claude Code's cloud environment, which no checkout can settle."
 anchored = true
 skeleton_hash = "01d07f4c"
@@ -154,7 +166,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "719a12a5"
-line = 97
+line = 113
 text = "If you touch `blocks()`, `normalise()` or the claim id, say so in the commit: every published audit's `--verify` stops reproducing when a claim id moves."
 anchored = true
 skeleton_hash = "ff2952e1"
@@ -166,7 +178,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/scan.py"
-  lines = "303"
+  lines = "304"
   hash = "6c9b3af6"
   quote = "def normalise(text):"
   note = "normalise and blocks feed the claim id, which the ticket is derived from; moving any of them changes what --verify recomputes"
@@ -198,7 +210,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "82c1b787"
-line = 75
+line = 77
 text = "Change what it *asserts*, a number or a unit or a \"never\", and it goes stale, which is the point."
 anchored = false
 skeleton_hash = "9ff066fb"
@@ -210,14 +222,14 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "510"
+  lines = "529"
   hash = "50ddb552"
   quote = "if prior.get(\"skeleton_hash\") != entry[\"skeleton_hash\"]:"
   note = "the skeleton carries numbers, units and quantifiers, so changing one stales the claim while rewording does not"
 
 [[claim]]
 id = "82fce89e"
-line = 116
+line = 120
 text = "Touch them only deliberately, and never make `record` accept a verdict that cites no evidence — that check is the reason a ledger is worth more than an assertion."
 anchored = true
 skeleton_hash = "2e167a5b"
@@ -229,7 +241,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1332"
+  lines = "1386"
   hash = "b8d86c10"
   quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
   note = "the check the instruction refers to; identity_key and skeleton are at 286 and 275"
@@ -249,14 +261,14 @@ revision = "8fdc887"
   [[claim.evidence]]
   file = "skills/metadiscourse-audit/scripts/scan.py"
   symbol = "main"
-  lines = "811"
+  lines = "812"
   hash = "3a42ca36"
   quote = "print(\"no standing markdown found\" + note, file=sys.stderr)"
   note = "confirmed by running it: scan.py README.md exits 2 with that line"
 
 [[claim]]
 id = "8be0c524"
-line = 95
+line = 111
 text = "`lie-detector`'s draw has to stay reproducible across machines and Python versions, so nothing in its sampling path may depend on set iteration, dictionary insertion order or the order a filesystem walk returns files."
 anchored = true
 skeleton_hash = "b03fb38d"
@@ -268,7 +280,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/scan.py"
-  lines = "532"
+  lines = "533"
   hash = "be8cad8a"
   quote = "def draw(claims, seed, n):"
   note = "the draw sorts on a sha256 ticket, and collect() sorts the file list, so neither set iteration nor walk order reaches it"
@@ -319,7 +331,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "bc8891c7"
-line = 91
+line = 107
 text = "Bump `version` in both `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` together when the skill changes; CI fails if they drift."
 anchored = true
 skeleton_hash = "601a0a95"
@@ -338,7 +350,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "c4473b48"
-line = 79
+line = 81
 text = "Those footnotes are metadiscourse, and they are protected on purpose: their subject is whether a sentence is true, which is the one thing about a document a reader cannot get by reading it."
 anchored = false
 skeleton_hash = "f5dc1ed7"
@@ -351,7 +363,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "d126ce25"
-line = 81
+line = 83
 text = "Both cleanup scanners skip them, and `metadiscourse-audit`'s step 1 says why."
 anchored = false
 skeleton_hash = "dca6384d"
@@ -363,7 +375,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/metadiscourse-audit/scripts/scan.py"
-  lines = "406"
+  lines = "407"
   hash = "0b8dcbf7"
   quote = "CLAIM_DEF = re.compile(r\"^\\s*\\[\\^c[0-9a-f]{8}\\]:\")"
   note = "ai-slop-audit's scanner carries the same skip; the rule is stated in metadiscourse-audit's step 1"
@@ -414,7 +426,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "ef5ff1ca"
-line = 85
+line = 89
 text = "`record` rejects a supported or refuted verdict that quotes no evidence, and rejects a quote that is not at the line it cites — do not work around that, it is the only thing making the ledger worth more than an assertion."
 anchored = true
 skeleton_hash = "7c701802"
@@ -427,13 +439,13 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1332"
+  lines = "1386"
   hash = "b8d86c10"
   quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1358"
+  lines = "1412"
   hash = "b5a48285"
   quote = "raise RecordError(\"quoted text is not at %s:%s — the citation does \""
   note = "the second refusal: a quote that is not at the line it cites"
@@ -471,7 +483,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/metadiscourse-audit/scripts/scan.py"
-  lines = "729"
+  lines = "730"
   hash = "ee8fd7a8"
   quote = "Also worth excluding: a document *about* metadiscourse quotes metadiscourse"
 

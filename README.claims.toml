@@ -7,7 +7,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "0b55772c"
-line = 392
+line = 410
 text = "One environment covers every cloud session you start from it — the web, `claude --cloud`, the mobile and desktop apps, and routines — across all your repositories."
 anchored = true
 skeleton_hash = "134fb84f"
@@ -21,7 +21,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "0dad975b"
-line = 517
+line = 535
 text = "Dated plans, specs, ADRs, RFCs and changelogs are excluded by default — an exclusion from scanning, not a verdict that they should be kept; the one record the slop audit will propose deleting is a plan whose work has already merged."
 anchored = true
 skeleton_hash = "e2ab7881"
@@ -33,7 +33,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/scan.py"
-  lines = "462"
+  lines = "463"
   hash = "92140b23"
   quote = "RECORD_DIRS = (\"/plans/\", \"/specs/\", \"/adr/\", \"/adrs/\", \"/rfc/\", \"/rfcs/\","
 
@@ -46,7 +46,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "11aa7726"
-line = 276
+line = 294
 text = "Reword a sentence and the verdict holds; change 500 to 100, or \"never\" to \"rarely\", or the constant the claim cites, and that one entry goes stale:"
 anchored = true
 skeleton_hash = "3095ca35"
@@ -58,14 +58,14 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "283"
+  lines = "302"
   hash = "91b1e558"
   quote = "def skeleton(text):"
   note = "skeleton carries identifiers, numbers, units and quantifiers, so rewording holds and 500->100 or never->rarely moves it; test_ledger.py pins all three cases"
 
 [[claim]]
 id = "14f6b361"
-line = 507
+line = 525
 text = "Everything else needs someone to decide what the surviving fact is, and keeping `--fix` that narrow is what makes it safe to run unattended."
 anchored = true
 skeleton_hash = "340c7329"
@@ -77,7 +77,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/metadiscourse-audit/scripts/scan.py"
-  lines = "922"
+  lines = "923"
   hash = "f7f82bc4"
   quote = "print(f\"{fixable} of these are mechanical — --fix applies them, \""
   note = "--fix is restricted to the mechanical subset; everything else is left to a reader"
@@ -96,7 +96,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/metadiscourse-audit/scripts/scan.py"
-  lines = "902"
+  lines = "903"
   hash = "e0c2338a"
   quote = "print(f\"{f['file']}:{f['line']}  [{f['label']}]\")"
   note = "the inventory is printed as file:line plus a class label"
@@ -122,7 +122,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "21d9dec7"
-line = 519
+line = 537
 text = "If your rules say that stated and inferred are never blurred, your evidence tags are load-bearing."
 anchored = true
 skeleton_hash = "9ff066fb"
@@ -140,7 +140,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "29961a02"
-line = 394
+line = 412
 text = "Open the environment settings at [claude.ai/code](https://claude.ai/code) and put this in **Setup script**:"
 anchored = true
 skeleton_hash = "f3b71adc"
@@ -166,7 +166,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "916"
+  lines = "951"
   hash = "ebb3eb59"
   quote = "entry.update({\"verdict\": \"unverified\", \"exempt\": True,"
   note = "every claim init writes is unverified and exempt; no code path in init sets supported"
@@ -185,7 +185,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/ai-slop-audit/scripts/scan.py"
-  lines = "473"
+  lines = "474"
   hash = "6c132fd0"
   quote = "def phantom_links(prose, path):"
   note = "resolves each relative link against the filesystem"
@@ -229,7 +229,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "31255dad"
-line = 446
+line = 464
 text = "Python 3 standard library, no dependencies, no install step:"
 anchored = true
 skeleton_hash = "336e3c37"
@@ -260,14 +260,14 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "393"
+  lines = "412"
   hash = "c67150a5"
   quote = "anchored = ANCHOR.search(outside)"
   note = "an anchor in the document is read as the claim's id, so the verdict follows the marker through a rewrite"
 
 [[claim]]
 id = "335cb9e0"
-line = 403
+line = 421
 text = "The `|| true` matters more: a setup script that exits non-zero stops the session from starting at all."
 anchored = true
 skeleton_hash = "921467aa"
@@ -281,7 +281,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "33caa1b1"
-line = 525
+line = 543
 text = "`skills/metadiscourse-audit/`, `skills/ai-slop-audit/` and `skills/lie-detector/` are the skills: each `SKILL.md` is the workflow your agent follows, each `references/` file holds the full taxonomy with worked examples and the false-positive families, and each `scripts/scan.py` is the scanner, with its tests beside it. lie-detector carries a second script, `scripts/ledger.py`, which manages the claim ledger — extraction, hashing, staleness, the backlog and the gate are mechanical and live there; reaching a verdict is the skill's job and does not."
 anchored = true
 skeleton_hash = "f988d6cc"
@@ -312,7 +312,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/metadiscourse-audit/scripts/scan.py"
-  lines = "912"
+  lines = "913"
   hash = "0ac785d8"
   quote = "print(\"\\n=== density — candidates per 100 lines ===\")"
   note = "ai-slop's scan.py prints the same table and a clean: line; both were grepped"
@@ -349,7 +349,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "706"
+  lines = "725"
   hash = "3afb91f3"
   quote = "def wiring_reference(root=\".\", ledger_path=SIDECAR_SUFFIX):"
   note = "init calls this and prints the block; apply_wiring only runs behind --wire"
@@ -368,7 +368,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "495"
+  lines = "514"
   hash = "cf8b9d65"
   quote = "def compare(entries, ledger, root=\".\"):"
   note = "entries come from a fresh extract() on every run; the ledger is only the other side of the diff"
@@ -387,7 +387,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/metadiscourse-audit/scripts/scan.py"
-  lines = "665"
+  lines = "666"
   hash = "22ea536c"
   quote = "def collisions(findings):"
   note = "the corpus-wide pass that finds one superlative claimed in several files"
@@ -406,7 +406,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1169"
+  lines = "1204"
   hash = "6feba03b"
   quote = "print(\"\\n%d blocking, %d advisory. Coverage %d%% (%d/%d verified) \""
   note = "the only summary the tool emits is coverage; no code path reports accuracy"
@@ -425,14 +425,14 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "510"
+  lines = "529"
   hash = "50ddb552"
   quote = "if prior.get(\"skeleton_hash\") != entry[\"skeleton_hash\"]:"
   note = "a claim is re-verified only when its skeleton or its evidence hash moved"
 
 [[claim]]
 id = "6d8b08a7"
-line = 440
+line = 458
 text = "Each `SKILL.md` is plain Markdown with YAML frontmatter and no tool-specific syntax, so nothing needs translating."
 anchored = true
 skeleton_hash = "c2b33df5"
@@ -451,7 +451,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "7976eb21"
-line = 480
+line = 498
 text = "`--code` extends a scan to source-file comments; a source file named on the command line needs no flag."
 anchored = true
 skeleton_hash = "13e984c9"
@@ -464,7 +464,7 @@ revision = "8fdc887"
   [[claim.evidence]]
   file = "skills/ai-slop-audit/scripts/scan.py"
   symbol = "collect"
-  lines = "881"
+  lines = "882"
   hash = "d6c2d72e"
   quote = "elif p.endswith((\".md\", \".markdown\")) or comment_syntax(p):"
   note = "a named source file is collected without --code; the walk above it takes code only when include_code is set"
@@ -489,7 +489,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "9553343e"
-line = 348
+line = 366
 text = "`--fix --dry-run` shows the mechanical subset before anything is applied."
 anchored = true
 skeleton_hash = "49aac519"
@@ -525,14 +525,14 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1332"
+  lines = "1386"
   hash = "b8d86c10"
   quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
   note = "the rules are refusals: validate_verdict raises rather than warns"
 
 [[claim]]
 id = "9e80e15a"
-line = 422
+line = 440
 text = "`AGENTS.md` is the portable route — Codex, Cursor, Copilot, Gemini CLI, Aider, Windsurf and Zed all read it."
 anchored = true
 skeleton_hash = "d9abb79e"
@@ -559,14 +559,14 @@ revision = "8fdc887"
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
   symbol = "cmd_init"
-  lines = "942"
+  lines = "977"
   hash = "f6417271"
   quote = "print(\"Extracting claims from %d file(s)...\\n\" % len(files))"
   note = "init prints an enrolment summary and backlog; no --fix exists on either lie-detector script"
 
 [[claim]]
 id = "a8fe8ee5"
-line = 351
+line = 369
 text = "`repo-d` is planted for the lie detector, and its plant is a disagreement rather than a mess: the docs state a 30-second timeout, five retries and a report written on every failure, while `src/relay.py` holds `10`, `3` and a nightly job."
 anchored = true
 skeleton_hash = "5765d271"
@@ -590,7 +590,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "ac37f727"
-line = 332
+line = 350
 text = "The tail is the part that only works corpus-wide — collisions, density, and the clean list:"
 anchored = true
 skeleton_hash = "ba46a94e"
@@ -602,14 +602,14 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/metadiscourse-audit/scripts/scan.py"
-  lines = "881"
+  lines = "882"
   hash = "1e6e2ff1"
   quote = "coll = collisions(findings)"
   note = "the tail of a run prints collisions, then the density table at 900, then the clean list"
 
 [[claim]]
 id = "b29d02a7"
-line = 291
+line = 309
 text = "A ledger of rubber-stamped verdicts is worse than none, because it launders assumption as evidence."
 anchored = true
 skeleton_hash = "fdbb9db6"
@@ -622,7 +622,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "b455d13b"
-line = 422
+line = 440
 text = "Clone the repository somewhere your agent can see, then point at the skills from your `AGENTS.md`:"
 anchored = true
 skeleton_hash = "b58321fa"
@@ -635,7 +635,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "bc7e2aff"
-line = 442
+line = 460
 text = "Cursor's own `.cursor/rules/*.mdc` format expects MDC files rather than a skill directory, so use the `AGENTS.md` route there too — Cursor reads it natively."
 anchored = true
 skeleton_hash = "a6d130ad"
@@ -649,7 +649,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "bcd0eddc"
-line = 440
+line = 458
 text = "The `references/` files are loaded on demand, only when a finding is ambiguous."
 anchored = true
 skeleton_hash = "6e46b342"
@@ -667,7 +667,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "bd28355f"
-line = 388
+line = 406
 text = "Pass `--project` to install into the current repo instead, `--link` to symlink so `git pull` updates them in place, or `--uninstall` to remove them."
 anchored = true
 skeleton_hash = "f43f8857"
@@ -722,7 +722,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1332"
+  lines = "1386"
   hash = "b8d86c10"
   quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
   note = "an evidence-free supported is rejected and redirected to unsupported; no path turns absence into refuted"
@@ -760,14 +760,14 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1112"
+  lines = "1147"
   hash = "810649de"
   quote = "rows.append((\"FAIL\", entry, \"new claim, no verdict\"))"
   note = "new claims block; an edited claim loses its exemption in the branch below"
 
 [[claim]]
 id = "d8bfb1d7"
-line = 388
+line = 406
 text = "That installs every skill to `~/.claude/skills/<name>` (pass `--skill metadiscourse-audit` for just one)."
 anchored = true
 skeleton_hash = "a2882710"
@@ -792,7 +792,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "de054205"
-line = 403
+line = 421
 text = "The `PATH` fallback is there because setup scripts run as root under a non-login shell, where `claude` is not otherwise found."
 anchored = true
 skeleton_hash = "c2572d77"
@@ -806,7 +806,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "de95968c"
-line = 407
+line = 425
 text = "To scope the skills to one repository rather than every cloud session, commit the same two keys to that repository's `.claude/settings.json`:"
 anchored = true
 skeleton_hash = "4f584e70"
@@ -820,7 +820,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "deece67d"
-line = 507
+line = 525
 text = "`--fix` applies only the rewrites whose removal cannot lose a fact: stripping a \"worth …\" wrapper, deleting a pleasantry line, removing emoji from a heading."
 anchored = true
 skeleton_hash = "27986ffe"
@@ -833,7 +833,7 @@ revision = "8fdc887"
   [[claim.evidence]]
   file = "skills/ai-slop-audit/scripts/scan.py"
   symbol = "main"
-  lines = "939-941"
+  lines = "940-942"
   hash = "d999a985"
   quote = "Never rewrite a source file. Comment extraction is heuristic,"
   note = "--fix skips any file with comment_syntax, so comment findings stay report-only"
@@ -865,7 +865,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/metadiscourse-audit/scripts/scan.py"
-  lines = "902"
+  lines = "903"
   hash = "e0c2338a"
   quote = "print(f\"{f['file']}:{f['line']}  [{f['label']}]\")"
   note = "the scanner supplies file:line, text and class; the verdict and rewrite come from the skill's report format, so the sentence describes the audit rather than the script alone"
@@ -910,7 +910,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "f1a9344c"
-line = 392
+line = 410
 text = "`/plugin` is a terminal command, so cloud sessions cannot install anything interactively, and `~/.claude` does not carry over from your machine."
 anchored = true
 skeleton_hash = "3529ddff"
@@ -942,7 +942,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "f993e82a"
-line = 507
+line = 525
 text = "It never rewrites a source file — comment extraction is heuristic, so those findings stay in human hands."
 anchored = true
 skeleton_hash = "9ff066fb"
@@ -954,7 +954,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/ai-slop-audit/scripts/scan.py"
-  lines = "941"
+  lines = "942"
   hash = "a2e00a35"
   quote = "Never rewrite a source file. Comment extraction is heuristic,"
 
@@ -979,7 +979,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "faec2646"
-line = 403
+line = 421
 text = "It resolves through `command -v` first, so it does nothing on an image that already puts `claude` on the path, and the directory it falls back to carries no version in its name."
 anchored = true
 skeleton_hash = "3142bd90"
@@ -993,7 +993,7 @@ revision = "8fdc887"
 
 [[claim]]
 id = "ffe46a3e"
-line = 455
+line = 473
 text = "The corpus arguments (`docs`, `README.md`) resolve against your working directory, not against the clone — which is why the scripts are addressed by absolute path and the corpus by relative one:"
 anchored = true
 skeleton_hash = "cd903fd7"

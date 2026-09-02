@@ -63,7 +63,8 @@ FENCE = re.compile(r"^\s*(```|~~~)")
 # — extracting "supported · 2026-09-02 · src/relay.py:3" as a claim would
 # have the tool verifying its own bookkeeping, and re-verifying it every time
 # a verdict changed.
-CLAIM_ANCHOR = re.compile(r"\[\^c[0-9a-f]{8}\]")
+CLAIM_ANCHOR = re.compile(r"\[\^c[0-9a-f]{8}\]"
+                          r"|<!--\s*c[0-9a-f]{8}\s*-->")
 CLAIM_DEF = re.compile(r"^\s*\[\^c[0-9a-f]{8}\]:")
 CLAIM_BLOCK = "<!-- claim anchors:"
 HEADING = re.compile(r"^\s*#{1,6}\s")
@@ -157,7 +158,7 @@ ABBREV = re.compile(r"\b(?:e\.g|i\.e|etc|vs|cf|approx|Fig|Eq|al|Inc|Ltd"
 # A sentence may end with its claim anchor — "…per flush.[^c4e233156]" — and
 # the split has to happen after the marker, not be blocked by it. Both
 # lookbehinds are fixed width, which is what Python requires.
-SPLIT = re.compile(r"(?:(?<=[.!?])|(?<=\[\^c[0-9a-f]{8}\]))"
+SPLIT = re.compile(r"(?:(?<=[.!?])|(?<=\[\^c[0-9a-f]{8}\])|(?<=-->))"
                    r"\s+(?=[\"'`(\[*_A-Z0-9])")
 
 

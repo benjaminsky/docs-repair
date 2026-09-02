@@ -92,11 +92,20 @@ the sentence *asserts* stales it. An anchored sentence also stays a claim
 even if a rewrite leaves it matching no class, because the marker is the
 author saying it is tracked.
 
+**Two marker forms, because a footnote reference only renders as a neat
+superscript when a definition exists.** Without one, markdown prints the raw
+`[^c4e233156]` and the document looks vandalised — so a document that keeps
+footnotes gets the footnote form, and a document that does not gets an HTML
+comment (`<!--c4e233156-->`), which renders as nothing at all and costs the
+same handful of tokens. Both are read as ids; a document can change form and
+`init --anchor` swaps the markers over.
+
 **Files an agent loads every session get markers and no footnotes.**
 `CLAUDE.md`, `AGENTS.md`, `.cursorrules` and their kin are read into the
 context of every session started in the repository, so a definitions block
 there is paid for on every session, forever — in this repository it was 23%
-of `CLAUDE.md`. The markers stay, because they are what carries identity and
+of `CLAUDE.md`. The markers stay — invisible, since these files have no
+footnotes to render against — because they are what carries identity and
 they cost a fraction of the block; the provenance lives in the sidecar, one
 `show` away. Ordinary documents keep their footnotes, where a human reader
 benefits from them.

@@ -492,9 +492,12 @@ class TestSidecarsAndAnchors(unittest.TestCase):
         self.run_cli(root, "init", os.path.join(root, "CLAUDE.md"), "--anchor")
         with open(os.path.join(root, "CLAUDE.md"), encoding="utf-8") as fh:
             body = fh.read()
-        self.assertRegex(body, r"\[\^c[0-9a-f]{8}\]")
+        # The comment form, because a footnote reference with no definition
+        # renders as literal "[^c4e23315]" — which is what made an
+        # unfootnoted document look vandalised.
+        self.assertRegex(body, r"<!--c[0-9a-f]{8}-->")
+        self.assertNotIn("[^c", body)
         self.assertNotIn(ledger.ANCHOR_HEADER, body)
-        self.assertNotIn("\n[^c", body)
 
     def test_an_ordinary_document_keeps_its_footnotes(self):
         root = tree()
@@ -504,6 +507,30 @@ class TestSidecarsAndAnchors(unittest.TestCase):
             body = fh.read()
         self.assertIn(ledger.ANCHOR_HEADER, body)
         self.assertIn("\n[^c", body)
+
+    def test_a_comment_marker_still_ends_its_sentence(self):
+        # "…vocabulary.<!--c4e23315-->" has to remain a sentence boundary, or
+        # two claims merge into one and both go stale.
+        root = tree(extra={"CLAUDE.md": "# N\n\nThe timeout is 30 seconds by "
+                                        "default. The port is 9102 on every "
+                                        "node here.\n"})
+        self.run_cli(root, "init", os.path.join(root, "CLAUDE.md"), "--anchor")
+        entries, _, _ = ledger.extract([os.path.join(root, "CLAUDE.md")],
+                                       root=root)
+        self.assertEqual(len(entries), 2, [e["text"] for e in entries.values()])
+
+    def test_a_document_can_change_marker_form(self):
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"), "--anchor")
+        led = ledger.load_ledger(os.path.join(root, "docs",
+                                              "relay.claims.toml"))
+        claims = [dict(c, file="docs/relay.md") for c in led["claim"]]
+        ledger.sync_anchors("docs/relay.md", claims, root, footnotes=False)
+        with open(os.path.join(root, "docs", "relay.md"),
+                  encoding="utf-8") as fh:
+            body = fh.read()
+        self.assertNotIn("[^c", body)          # no stale footnote markers
+        self.assertRegex(body, r"<!--c[0-9a-f]{8}-->")
 
     def test_footnotes_are_rewritten_not_accumulated(self):
         root = tree()

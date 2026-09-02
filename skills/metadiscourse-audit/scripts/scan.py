@@ -402,7 +402,8 @@ FENCE = re.compile(r"^\s*(```|~~~)")
 # subject is the document — but what they carry is whether a sentence is
 # true, which is the one thing about a document that is content. They are
 # skipped here and protected in the skill's step 1.
-CLAIM_ANCHOR = re.compile(r"\[\^c[0-9a-f]{8}\]")
+CLAIM_ANCHOR = re.compile(r"\[\^c[0-9a-f]{8}\]"
+                          r"|<!--\s*c[0-9a-f]{8}\s*-->")
 CLAIM_DEF = re.compile(r"^\s*\[\^c[0-9a-f]{8}\]:")
 CLAIM_BLOCK = "<!-- claim anchors:"
 
