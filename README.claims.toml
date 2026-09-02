@@ -166,7 +166,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "895"
+  lines = "916"
   hash = "ebb3eb59"
   quote = "entry.update({\"verdict\": \"unverified\", \"exempt\": True,"
   note = "every claim init writes is unverified and exempt; no code path in init sets supported"
@@ -406,7 +406,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1148"
+  lines = "1169"
   hash = "6feba03b"
   quote = "print(\"\\n%d blocking, %d advisory. Coverage %d%% (%d/%d verified) \""
   note = "the only summary the tool emits is coverage; no code path reports accuracy"
@@ -525,7 +525,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1311"
+  lines = "1332"
   hash = "b8d86c10"
   quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
   note = "the rules are refusals: validate_verdict raises rather than warns"
@@ -559,7 +559,7 @@ revision = "8fdc887"
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
   symbol = "cmd_init"
-  lines = "921"
+  lines = "942"
   hash = "f6417271"
   quote = "print(\"Extracting claims from %d file(s)...\\n\" % len(files))"
   note = "init prints an enrolment summary and backlog; no --fix exists on either lie-detector script"
@@ -722,7 +722,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1311"
+  lines = "1332"
   hash = "b8d86c10"
   quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
   note = "an evidence-free supported is rejected and redirected to unsupported; no path turns absence into refuted"
@@ -760,7 +760,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1091"
+  lines = "1112"
   hash = "810649de"
   quote = "rows.append((\"FAIL\", entry, \"new claim, no verdict\"))"
   note = "new claims block; an edited claim loses its exemption in the branch below"

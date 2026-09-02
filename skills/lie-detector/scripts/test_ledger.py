@@ -482,6 +482,29 @@ class TestSidecarsAndAnchors(unittest.TestCase):
         entry = list(entries_of(root).values())[0]
         self.assertIn("`[^cdeadbeef]`", entry["text"])
 
+    def test_a_context_file_gets_markers_but_no_footnote_block(self):
+        # CLAUDE.md and its siblings are loaded into every session an agent
+        # starts, so a definitions block there is paid for forever. The
+        # markers stay — they are what carries identity — and the provenance
+        # lives in the sidecar.
+        root = tree(extra={"CLAUDE.md": "# Notes\n\nThe timeout is 30 "
+                                        "seconds by default here.\n"})
+        self.run_cli(root, "init", os.path.join(root, "CLAUDE.md"), "--anchor")
+        with open(os.path.join(root, "CLAUDE.md"), encoding="utf-8") as fh:
+            body = fh.read()
+        self.assertRegex(body, r"\[\^c[0-9a-f]{8}\]")
+        self.assertNotIn(ledger.ANCHOR_HEADER, body)
+        self.assertNotIn("\n[^c", body)
+
+    def test_an_ordinary_document_keeps_its_footnotes(self):
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"), "--anchor")
+        with open(os.path.join(root, "docs", "relay.md"),
+                  encoding="utf-8") as fh:
+            body = fh.read()
+        self.assertIn(ledger.ANCHOR_HEADER, body)
+        self.assertIn("\n[^c", body)
+
     def test_footnotes_are_rewritten_not_accumulated(self):
         root = tree()
         self.run_cli(root, "init", os.path.join(root, "docs"), "--anchor")

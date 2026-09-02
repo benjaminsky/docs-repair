@@ -553,7 +553,7 @@ MIT.
 [^ce63331b2]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:902
 [^c186f5991]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:38
 [^cf9a26693]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:359
-[^ca527b649]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:883
+[^ca527b649]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:921
 [^cf12d8ddc]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:144
 [^c30dba78c]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:359
 [^c7c88fab6]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:65
@@ -566,16 +566,16 @@ MIT.
 [^cc3ed1490]: supported · 2026-09-02 · skills/metadiscourse-audit/SKILL.md:230
 [^c2b4d34e1]: supported · 2026-09-02 · skills/ai-slop-audit/scripts/scan.py:473
 [^c49ec7768]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:144
-[^c335ba416]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:392
+[^c335ba416]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:393
 [^c11aa7726]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:283
-[^c2a3feb3c]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:857
-[^ccf128b0d]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1051
-[^c4f26fc9b]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:462
-[^c6a44d483]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:477
+[^c2a3feb3c]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:895
+[^ccf128b0d]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1091
+[^c4f26fc9b]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:495
+[^c6a44d483]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:510
 [^cb29d02a7]: unverifiable · 2026-09-02
-[^c987a2e46]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:43, skills/lie-detector/scripts/ledger.py:1240
-[^cc76a8cdb]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1240
-[^c4aec42eb]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:668
+[^c987a2e46]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:43, skills/lie-detector/scripts/ledger.py:1311
+[^cc76a8cdb]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1311
+[^c4aec42eb]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:706
 [^cac37f727]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:881
 [^c9553343e]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:353
 [^ca8fe8ee5]: supported · 2026-09-02 · evals/fixtures/repo-d/docs/relay.md:10, evals/fixtures/repo-d/src/relay.py:4
@@ -602,4 +602,4 @@ MIT.
 [^c0dad975b]: supported · 2026-09-02 · skills/lie-detector/scripts/scan.py:462, skills/ai-slop-audit/SKILL.md:219
 [^c21d9dec7]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:65
 [^c33caa1b1]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:2
-[^c64e9c1cc]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1108
+[^c64e9c1cc]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1148

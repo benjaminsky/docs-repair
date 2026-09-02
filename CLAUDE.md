@@ -70,8 +70,10 @@ python3 skills/lie-detector/scripts/ledger.py record verdicts.json --by "$(whoam
 ```
 
 Every claim here is **anchored**: the sentence carries its own id as a
-markdown footnote (`[^c4e233156]`), and the block at the end of each document
-says what settled it.[^c073d0dd0] Reword an anchored sentence however you like — the
+markdown footnote (`[^c4e233156]`). `README.md` also carries the block of
+definitions saying what settled each one; this file deliberately does not,
+because it is loaded into every session and the sidecar holds the same
+provenance.[^c073d0dd0] Reword an anchored sentence however you like — the
 verdict follows the anchor. Change what it *asserts*, a number or a unit or a
 "never", and it goes stale, which is the point.[^c82c1b787] Do not hand-edit the anchors
 or the footnote block; `record` rewrites them.
@@ -120,29 +122,3 @@ that cites no evidence — that check is the reason a ledger is worth more
 than an assertion.[^c82fce89e] `ledger.py` also parses its own TOML below Python 3.11,
 so any new field must round-trip through both readers: `test_ledger.py`
 pins that.[^c31aa6714]
-
-<!-- claim anchors: written by lie-detector -->
-
-[^cdcc0fa24]: supported · 2026-09-02 · evals/README.md:1
-[^c581bd6e9]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:5
-[^cff7ad4ec]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:729
-[^c8893e942]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:811
-[^ca2390aa6]: supported · 2026-09-02 · skills/metadiscourse-audit/SKILL.md:166
-[^cf5ea24e1]: supported · 2026-09-02 · .github/workflows/ci.yml:50
-[^c7d689f59]: supported · 2026-09-02 · evals/fixtures/repo-c/docs/setup.md:23, evals/fixtures/repo-c/docs/architecture.md:18
-[^c9498a486]: supported · 2026-09-02 · evals/fixtures/repo-d/src/relay.py:1-3, evals/fixtures/repo-d/docs/relay.md:16
-[^c04a3c2ee]: supported · 2026-09-02 · evals/fixtures/repo-d/src/relay.py:11
-[^ce3176568]: supported · 2026-09-02 · .github/workflows/ci.yml:264
-[^c073d0dd0]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:767
-[^c82c1b787]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:510
-[^c6b780797]: supported · 2026-09-02 · README.claims.toml:4
-[^cc4473b48]: unverifiable · 2026-09-02
-[^cd126ce25]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:406, skills/metadiscourse-audit/SKILL.md:73
-[^c454420bc]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1162
-[^cef5ff1ca]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1311, skills/lie-detector/scripts/ledger.py:1337
-[^cbc8891c7]: supported · 2026-09-02 · .github/workflows/ci.yml:319
-[^c8be0c524]: supported · 2026-09-02 · skills/lie-detector/scripts/scan.py:532
-[^c719a12a5]: supported · 2026-09-02 · skills/lie-detector/scripts/scan.py:303
-[^c31aa6714]: supported · 2026-09-02 · skills/lie-detector/scripts/test_ledger.py:75
-[^c435bb17f]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:294, skills/lie-detector/scripts/ledger.py:1311
-[^c82fce89e]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1311

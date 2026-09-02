@@ -2,7 +2,7 @@
 # evidence that settled it. Re-check with: ledger.py check
 schema = 1
 doc = "CLAUDE.md"
-generated_at = "2026-09-02T16:41:42Z"
+generated_at = "2026-09-02T17:30:38Z"
 revision = "8fdc887"
 
 [[claim]]
@@ -26,22 +26,29 @@ revision = "8fdc887"
 
 [[claim]]
 id = "073d0dd0"
-line = 72
-text = "Every claim here is **anchored**: the sentence carries its own id as a markdown footnote (`[^c4e233156]`), and the block at the end of each document says what settled it."
-anchored = false
-skeleton_hash = "857953f1"
+line = 73
+text = "`README.md` also carries the block of definitions saying what settled each one; this file deliberately does not, because it is loaded into every session and the sidecar holds the same provenance."
+anchored = true
+skeleton_hash = "0472eff3"
 class = "C"
 verdict = "supported"
-verified_at = "2026-09-02T16:39:03Z"
+verified_at = "2026-09-02T17:30:38Z"
 verified_by = "claude-opus-5"
-revision = "8fdc887"
+revision = "abfdd6a"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "767"
-  hash = "55a523a9"
-  quote = "def sync_anchors(doc_path, claims, root=\".\"):"
-  note = "writes each claim's marker onto its sentence and maintains the footnote block at the end of the document"
+  lines = "756"
+  hash = "b5b5643b"
+  quote = "def wants_footnotes(doc_path):"
+  note = "CLAUDE.md is in CONTEXT_DOCS, so sync_anchors writes its markers and skips the definitions block"
+
+  [[claim.evidence]]
+  file = "README.claims.toml"
+  lines = "2"
+  hash = "8afdbf5d"
+  quote = "# evidence that settled it. Re-check with: ledger.py check"
+  note = "the sidecar holds the same provenance the block would have shown"
 
 [[claim]]
 id = "31aa6714"
@@ -84,7 +91,7 @@ revision = "8fdc887"
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
   symbol = "validate_verdict"
-  lines = "1311"
+  lines = "1332"
   hash = "b8d86c10"
   quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
   note = "the never-accept-a-verdict-without-evidence half of the same claim"
@@ -103,7 +110,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1162"
+  lines = "1183"
   hash = "19aade43"
   quote = "def _relocate(sidecars, root, args):"
   note = "it rewrites ev[\"lines\"] and ev[\"hash\"] only; no verdict field is touched"
@@ -222,7 +229,7 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1311"
+  lines = "1332"
   hash = "b8d86c10"
   quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
   note = "the check the instruction refers to; identity_key and skeleton are at 286 and 275"
@@ -420,13 +427,13 @@ revision = "8fdc887"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1311"
+  lines = "1332"
   hash = "b8d86c10"
   quote = "if verdict in NEEDS_EVIDENCE and not evidence:"
 
   [[claim.evidence]]
   file = "skills/lie-detector/scripts/ledger.py"
-  lines = "1337"
+  lines = "1358"
   hash = "b5a48285"
   quote = "raise RecordError(\"quoted text is not at %s:%s — the citation does \""
   note = "the second refusal: a quote that is not at the line it cites"

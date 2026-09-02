@@ -743,6 +743,19 @@ def block_for(ledger_path, corpus):
 
 ANCHOR_HEADER = "<!-- claim anchors: written by lie-detector -->"
 
+# Files an agent loads into every session it starts. A footnote block in one
+# of these is paid for on every session, forever — in this repository it was
+# 23% of CLAUDE.md and roughly 500 tokens a session, against 72 tokens for
+# the markers that actually carry identity. So they are anchored without
+# footnotes: the marker keeps the claim's name in the document, and the
+# provenance lives in the sidecar, one `show` away.
+CONTEXT_DOCS = ("CLAUDE.md", "AGENTS.md", ".cursorrules",
+                "copilot-instructions.md", "GEMINI.md", ".windsurfrules")
+
+
+def wants_footnotes(doc_path):
+    return os.path.basename(doc_path) not in CONTEXT_DOCS
+
 
 def anchor_id(cid):
     return "c" + cid
@@ -764,7 +777,7 @@ def _definition(claim):
     return " · ".join(parts)
 
 
-def sync_anchors(doc_path, claims, root="."):
+def sync_anchors(doc_path, claims, root=".", footnotes=None):
     """Put each claim's marker on its sentence, and refresh the footnotes.
 
     Markers are appended to the sentence the claim was extracted from, and
@@ -831,12 +844,20 @@ def sync_anchors(doc_path, claims, root="."):
                       "where the ledger says it is"
                       % (anchor_id(claim["id"]), doc_path, n), file=sys.stderr)
 
-    defs = [ANCHOR_HEADER, ""]
-    for claim in sorted(claims, key=lambda c: int(c["line"])):
-        defs.append("[^%s]: %s" % (anchor_id(claim["id"]), _definition(claim)))
+    if footnotes is None:
+        footnotes = wants_footnotes(doc_path)
     while body and not body[-1].strip():
         body.pop()
-    out = body + [""] + defs + [""]
+    if footnotes:
+        defs = [ANCHOR_HEADER, ""]
+        for claim in sorted(claims, key=lambda c: int(c["line"])):
+            defs.append("[^%s]: %s" % (anchor_id(claim["id"]),
+                                       _definition(claim)))
+        out = body + [""] + defs + [""]
+    else:
+        # No block at all — not even the header, which would be one more line
+        # in every session's context for no reader's benefit.
+        out = body + [""]
     with open(full, "w", encoding="utf-8") as fh:
         fh.write("\n".join(out))
     return added
