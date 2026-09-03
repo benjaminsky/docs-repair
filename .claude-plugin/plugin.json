@@ -1,7 +1,7 @@
 {
   "name": "docs-repair",
   "description": "Documentation repair skills. metadiscourse-audit — find and remove text whose subject is the document, its author or its reader rather than the thing it documents. ai-slop-audit — strip generation residue and the machine register from AI-written docs. lie-detector — verify the factual claims in a doc set against the code and keep a ledger of what settled each one, with a CI gate and per-sentence provenance.",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "author": {
     "name": "benjaminsky"
   },
