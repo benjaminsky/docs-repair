@@ -28,6 +28,12 @@ jobs:
       - name: Run unit tests (ai-slop-audit)
         working-directory: skills/ai-slop-audit/scripts
         run: python3 test_scan.py
+      - name: Run unit tests (lie-detector, sampling)
+        working-directory: skills/lie-detector/scripts
+        run: python3 test_scan.py
+      - name: Run unit tests (lie-detector, ledger)
+        working-directory: skills/lie-detector/scripts
+        run: python3 test_ledger.py
 
   scanner:
     name: scanner exit codes
@@ -122,6 +128,154 @@ jobs:
             echo "::error::--check --code exited 0 on a fixture planted with comment candidates"
             exit 1
           fi
+
+      # repo-d is planted for lie-detector: docs/ makes claims src/relay.py
+      # contradicts. What CI pins here is not the verdicts — those need a
+      # reader — but the draw: a published sample is worthless if the same
+      # seed stops selecting the same claims, and nothing else would notice.
+      - name: lie-detector — a corpus with claims exits 0
+        run: python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d/docs -n 3 --seed ci
+
+      - name: lie-detector — a corpus with no claims exits 2
+        run: |
+          set +e
+          python3 skills/lie-detector/scripts/scan.py .github/workflows
+          status=$?
+          set -e
+          if [ "$status" -ne 2 ]; then
+            echo "::error::expected exit 2 when there is nothing to sample, got $status"
+            exit 1
+          fi
+
+      - name: lie-detector — the same seed draws the same claims
+        run: |
+          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d \
+              -n 5 --seed ci --json > /tmp/draw-a.json
+          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d \
+              -n 5 --seed ci --json > /tmp/draw-b.json
+          python3 -c 'import json, sys; \
+            a = json.load(open("/tmp/draw-a.json")); \
+            b = json.load(open("/tmp/draw-b.json")); \
+            same = [c["id"] for c in a["sample"]] == [c["id"] for c in b["sample"]]; \
+            print("::error::the same seed drew a different sample") if not same else None; \
+            print("::error::the corpus digest is not stable") if a["corpus"] != b["corpus"] else None; \
+            sys.exit(0 if same and a["corpus"] == b["corpus"] else 1)'
+
+      - name: lie-detector — --verify reproduces a draw, and notices an edited corpus
+        run: |
+          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d \
+              -n 5 --seed ci --json > /tmp/manifest.json
+          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d \
+              --verify /tmp/manifest.json
+          cp evals/fixtures/repo-d/docs/relay.md /tmp/relay.md.bak
+          printf '\nThe drain exits with status 7 after every flush.\n' \
+              >> evals/fixtures/repo-d/docs/relay.md
+          set +e
+          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d \
+              --verify /tmp/manifest.json
+          status=$?
+          set -e
+          cp /tmp/relay.md.bak evals/fixtures/repo-d/docs/relay.md
+          if [ "$status" -ne 1 ]; then
+            echo "::error::--verify exited $status on a corpus that changed under it"
+            exit 1
+          fi
+
+      - name: lie-detector — code comments are sampled only with --code
+        run: |
+          set +e
+          python3 skills/lie-detector/scripts/scan.py evals/fixtures/repo-d/src
+          status=$?
+          set -e
+          if [ "$status" -ne 2 ]; then
+            echo "::error::expected exit 2 without --code on a code-only directory, got $status"
+            exit 1
+          fi
+          python3 skills/lie-detector/scripts/scan.py --code -n 2 --seed ci \
+              evals/fixtures/repo-d/src
+
+      # The ledger's value is entirely in what it refuses. A regression that
+      # let a verdict be recorded without evidence would leave every command
+      # working and the tool worthless, so both directions are pinned here.
+      - name: lie-detector — init enrols, gate passes, new claim fails it
+        run: |
+          rm -rf /tmp/ldci && cp -r evals/fixtures/repo-d /tmp/ldci
+          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci"
+          $LD init /tmp/ldci/docs > /dev/null
+          $LD check > /dev/null
+          printf '\nThe `--flush-interval` flag defaults to 60 seconds.\n' \
+              >> /tmp/ldci/docs/relay.md
+          set +e; $LD check > /dev/null; status=$?; set -e
+          if [ "$status" -ne 1 ]; then
+            echo "::error::a new unverified claim did not fail the gate (got $status)"
+            exit 1
+          fi
+
+      - name: lie-detector — record refuses a verdict with no evidence
+        run: |
+          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci"
+          ID=$(python3 -c "
+          import sys; sys.path.insert(0, '$PWD/skills/lie-detector/scripts')
+          import ledger
+          print(ledger.load_ledger('/tmp/ldci/docs/relay.claims.toml')['claim'][0]['id'])")
+          echo "[{\"id\": \"$ID\", \"verdict\": \"supported\"}]" > /tmp/ldci/bad.json
+          set +e; $LD record /tmp/ldci/bad.json > /dev/null 2>&1; status=$?; set -e
+          if [ "$status" -ne 1 ]; then
+            echo "::error::record accepted a supported verdict citing no evidence"
+            exit 1
+          fi
+
+      - name: lie-detector — a code change stales the claims that cite it
+        run: |
+          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci"
+          ID=$(python3 -c "
+          import sys; sys.path.insert(0, '$PWD/skills/lie-detector/scripts')
+          import ledger
+          led = ledger.load_ledger('/tmp/ldci/docs/relay.claims.toml')
+          print(next(c['id'] for c in led['claim'] if 'batch-size' in c['text']))")
+          cat > /tmp/ldci/ok.json <<JSON
+          [{"id": "$ID", "verdict": "supported",
+            "evidence": [{"file": "src/relay.py", "lines": "3",
+                          "quote": "BATCH_SIZE = 500"}]}]
+          JSON
+          $LD record /tmp/ldci/ok.json --by ci > /dev/null
+          sed -i 's/BATCH_SIZE = 500/BATCH_SIZE = 100/' /tmp/ldci/src/relay.py
+          set +e; out=$($LD check); status=$?; set -e
+          if [ "$status" -ne 1 ] || ! echo "$out" | grep -q "evidence changed"; then
+            echo "::error::a changed constant did not stale the claim citing it"
+            echo "$out"
+            exit 1
+          fi
+
+      # The other half of the same rule: code that only moved is bookkeeping,
+      # and --relocate must fix it without touching a verdict.
+      - name: lie-detector — a citation that only moved is re-addressed
+        run: |
+          LD="python3 $PWD/skills/lie-detector/scripts/ledger.py --root /tmp/ldci"
+          sed -i 's/BATCH_SIZE = 100/BATCH_SIZE = 500/' /tmp/ldci/src/relay.py
+          sed -i '1i # a comment inserted above the evidence' /tmp/ldci/src/relay.py
+          out=$($LD check --relocate)
+          if ! echo "$out" | grep -q "Re-addressed 1"; then
+            echo "::error::a citation whose quote was intact was not re-addressed"
+            echo "$out"
+            exit 1
+          fi
+
+  claims:
+    name: documentation claims
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # This repository runs its own lie-detector against its own prose. The
+      # gate blocks a claim nobody has verified and one the tree contradicts;
+      # unsupported stays advisory, because several claims here are about
+      # Claude Code's cloud environment and no checkout can settle those.
+      - name: Every claim in README.md and CLAUDE.md carries a live verdict
+        run: python3 skills/lie-detector/scripts/ledger.py check
 
   manifests:
     name: plugin manifests

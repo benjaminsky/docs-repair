@@ -221,7 +221,12 @@ spending a glance per candidate.
    code is what these are for. Step 5 applies to prose shadowing code its
    own readers can open.
 
-7. **Human-written flourish.** People write "not only… but also" too, and
+7. **Verification provenance.** A claim anchor (`[^c4e23315]`), its footnote
+   definition, an evidence citation. Its subject is whether a sentence is
+   true, which is content; `metadiscourse-audit` protects it explicitly and
+   so does this audit. The scanner skips anchors and their definitions.
+
+8. **Human-written flourish.** People write "not only… but also" too, and
    people wrote "delve" for centuries before models did. A class 2-4 hit in
    a file that is otherwise clean, with git history showing a human author,
    is probably just their style — the audit removes slop, it does not
