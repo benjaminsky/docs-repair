@@ -156,7 +156,7 @@ generated corpus.
 | Manner | Example | Rewrite |
 | --- | --- | --- |
 | Rule of three | "fast, reliable, and effortless" | the one item you can measure, with its number |
-| Fragment cadence | "Batched writes. Zero downtime." | one sentence with a verb |
+| Fragment cadence (a *run* of them) | "Batched writes. Zero downtime. No config." | one sentence with a verb |
 | The reveal | "Here's the thing:", "The kicker?", "Enter Redis:" | delete the drumroll, keep the fact |
 | Question-then-answer | "Why does this matter? Because…" | the answer, as a sentence |
 | One-sentence paragraph | a lone line for drama | rejoin it to its paragraph |
@@ -171,9 +171,11 @@ construction whose outside was the point, so this class is never a Fold.
 
 **The guard.** This is the class most likely to damage prose that was fine.
 A chosen voice is a convention (step 1 protects it). One mannered sentence in
-an otherwise clean file, from a human author, is that person writing. And
-never level a whole document: per-sentence verdicts only, or the audit
-becomes a rewrite nobody asked for.
+an otherwise clean file, from a human author, is that person writing — and a
+lone verbless sentence is not a cadence; the cadence is the run. Quoted copy
+keeps its manner, because the manner is what is being reported. And never
+level a whole document: per-sentence verdicts only, or the audit becomes a
+rewrite nobody asked for.
 
 **Boundary:** contrastive framing about the document itself belongs to
 `metadiscourse-audit`; symmetric filler is class 4 here. One line, one
@@ -255,13 +257,25 @@ spending a glance per candidate.
    register those genres are written in. Convention beats manner, the same
    way it beats class 5.
 
-7. **Documentation for readers without the source.** A published API
+7. **Somebody else's words, quoted.** A competitor's marketing line in a
+   research write-up, a transcribed UI string, an error message, a review
+   pulled in as evidence. The manner is the subject of the sentence rather
+   than its voice, and flattening it falsifies the quotation. Applies to
+   every register class, and to manner most of all — quoted copy is *made*
+   of rhetorical questions and reveals.
+
+8. **Documentation for readers without the source.** A published API
    reference, an SDK's parameter table, a CLI's flag list: restating the
    code is what these are for. Step 5 applies to prose shadowing code its
    own readers can open.
 
-8. **Human-written flourish.** People write "not only… but also" too, and
-   people wrote "delve" for centuries before models did. A class 2-4 hit in
-   a file that is otherwise clean, with git history showing a human author,
-   is probably just their style — the audit removes slop, it does not
-   enforce plainness on a writer who chose otherwise.
+9. **Verification provenance.** A claim anchor (`[^c4e23315]`), its footnote
+   definition, an evidence citation. Its subject is whether a sentence is
+   true, which is content; `metadiscourse-audit` protects it explicitly and
+   so does this audit. The scanner skips anchors and their definitions.
+
+10. **Human-written flourish.** People write "not only… but also" too, and
+    people wrote "delve" for centuries before models did. A class 2-4 hit in
+    a file that is otherwise clean, with git history showing a human author,
+    is probably just their style — the audit removes slop, it does not
+    enforce plainness on a writer who chose otherwise.

@@ -384,6 +384,24 @@ no judgement about content — just name the subject.
 
 ---
 
+## Verification provenance — never a finding
+
+A claim anchor (`[^c4e23315]`), its footnote definition, an evidence citation
+or a per-claim "last checked" note is metadiscourse by the letter of the
+definition and content by every practical measure: its subject is whether a
+sentence is true and how anyone knows. Ordinary metadiscourse describes the
+document's history or its shape; provenance describes its truth, which is the
+one thing about a document a reader cannot get by reading it.
+
+Keep it, and name it as protected in the report. The scanner already skips
+anchors and their definitions; anything it misses is Keep too.
+
+The boundary: provenance attaches to a **claim**. A dated stamp about the
+whole page ("Status 2026-05-02: reviewed") is still class 0c — it tells you
+about the document, not about any particular assertion in it. And a
+provenance note whose evidence has moved is a `lie-detector` finding, not a
+licence for this audit to tidy it away.
+
 ## False positives
 
 Every one of these was flagged by the scanner on a real repo and was **wrong**.

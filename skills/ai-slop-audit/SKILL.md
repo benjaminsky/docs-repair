@@ -247,8 +247,10 @@ confirm the ones that are spent.
 
 Not a step — it needs nothing but reading, so it happens during triage — and
 not a scanner class, because no pattern separates a cadence from a person.
-It gets a section because it is the largest category the scanner cannot see,
-and on generated docs it is often the bulk of what is wrong.
+It gets a section because it is the largest category the scanner cannot see.
+On a corpus generated in one pass it is usually the bulk of what is wrong; on
+docs a person has edited since, expect a handful of findings against the
+scanner's dozens — the guard below is what keeps the pass safe there.
 
 Classes 1 to 4 are about *words*: an unearned adjective, a lexical tell, an
 essay opener, a symmetric construction. Mannered prose is about **shape** —
@@ -267,8 +269,9 @@ for the rhythm.
 + Relay delivers a batch in 3 ms at p99. One operator runs six clusters.
 ```
 
-**Fragment cadence.** Verbless sentences for emphasis. Sales copy in a
-runbook.
+**Fragment cadence.** A *run* of verbless sentences for emphasis — sales copy
+in a runbook. One of them is not a cadence: "The scenario builder." opening a
+README is a label, and a document that does it once is a person writing.
 
 ```diff
 - Batched writes. Zero downtime. No config.
@@ -325,7 +328,7 @@ detail gets missed.
 
 ### The guard, which matters more than the catalogue
 
-This is the class most likely to damage writing that was fine. Three rules,
+This is the class most likely to damage writing that was fine. Four rules,
 and they are not optional:
 
 1. **A chosen voice is a convention.** Step 1 protects it. A landing page, a
@@ -336,7 +339,13 @@ and they are not optional:
    shows who introduced the file. One mannered sentence in a document that
    is otherwise clean is a person writing; a document where every third
    sentence performs is the register this audit is for.
-3. **Never rewrite a document wholesale into flat prose.** This class is
+3. **Quoted copy keeps its manner.** A competitor's marketing line in a
+   research write-up, a transcribed UI string, an error message quoted as
+   evidence: the manner is the sentence's subject, not its voice, and
+   flattening it falsifies the quotation. This is the guard that fires most
+   often on research and competitive-analysis docs, where the reveals and
+   rhetorical questions all belong to somebody else.
+4. **Never rewrite a document wholesale into flat prose.** This class is
    per-sentence, with a verdict each. A pass that levels every cadence in a
    file is a humanizer run backwards, and it is not an audit — it is a
    rewrite nobody asked for, and it will destroy the parts a reader liked.
