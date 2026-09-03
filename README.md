@@ -266,9 +266,9 @@ into the sentence as a markdown footnote, and the block at the end of the
 document records what settled it:[^c335ba416]
 
 ```markdown
-The `--batch-size` flag defaults to 500 events per flush.
+The `--batch-size` flag defaults to 500 events per flush.[^c4e233156]
 
-: supported · 2026-09-01 · src/relay.py:3
+[^c4e233156]: supported · 2026-09-01 · [src/relay.py:3](src/relay.py#L3)
 ```
 
 Anchored claims survive rewriting: reword the sentence however you like and
@@ -548,39 +548,39 @@ MIT.
 
 <!-- claim anchors: written by lie-detector -->
 
-[^c16ef9f88]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:903
+[^c16ef9f88]: supported · 2026-09-02 · [skills/metadiscourse-audit/scripts/scan.py:903](skills/metadiscourse-audit/scripts/scan.py#L903)
 [^ce6220349]: unverifiable · 2026-09-02
-[^ce63331b2]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:903
-[^c186f5991]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:38
-[^cf9a26693]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:359
-[^ca527b649]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:977
-[^cf12d8ddc]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:144
-[^c30dba78c]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:359
-[^c7c88fab6]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:65
-[^cee7360e0]: supported · 2026-09-02 · skills/metadiscourse-audit/SKILL.md:47
-[^cf34631cf]: supported · 2026-09-02 · skills/metadiscourse-audit/SKILL.md:103
-[^c3d6e92a3]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:913
-[^ccc17fc75]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:65
-[^c5843d575]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:666
-[^c2b89925f]: supported · 2026-09-02 · skills/metadiscourse-audit/SKILL.md:268
-[^cc3ed1490]: supported · 2026-09-02 · skills/metadiscourse-audit/SKILL.md:230
-[^c2b4d34e1]: supported · 2026-09-02 · skills/ai-slop-audit/scripts/scan.py:474
-[^c49ec7768]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:144
-[^c335ba416]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:412
-[^c2a3feb3c]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:951
-[^ccf128b0d]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1147
-[^c4f26fc9b]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:514
-[^c6a44d483]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:529
-[^c11aa7726]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:302
-[^c987a2e46]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:43, skills/lie-detector/scripts/ledger.py:1386
+[^ce63331b2]: supported · 2026-09-02 · [skills/metadiscourse-audit/scripts/scan.py:903](skills/metadiscourse-audit/scripts/scan.py#L903)
+[^c186f5991]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:38](skills/ai-slop-audit/SKILL.md#L38)
+[^cf9a26693]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:359](skills/ai-slop-audit/SKILL.md#L359)
+[^ca527b649]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:1028](skills/lie-detector/scripts/ledger.py#L1028)
+[^cf12d8ddc]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:144](skills/ai-slop-audit/SKILL.md#L144)
+[^c30dba78c]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:359](skills/ai-slop-audit/SKILL.md#L359)
+[^c7c88fab6]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:65](skills/ai-slop-audit/SKILL.md#L65)
+[^cee7360e0]: supported · 2026-09-02 · [skills/metadiscourse-audit/SKILL.md:47](skills/metadiscourse-audit/SKILL.md#L47)
+[^cf34631cf]: supported · 2026-09-02 · [skills/metadiscourse-audit/SKILL.md:103](skills/metadiscourse-audit/SKILL.md#L103)
+[^c3d6e92a3]: supported · 2026-09-02 · [skills/metadiscourse-audit/scripts/scan.py:913](skills/metadiscourse-audit/scripts/scan.py#L913)
+[^ccc17fc75]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:65](skills/ai-slop-audit/SKILL.md#L65)
+[^c5843d575]: supported · 2026-09-02 · [skills/metadiscourse-audit/scripts/scan.py:666](skills/metadiscourse-audit/scripts/scan.py#L666)
+[^c2b89925f]: supported · 2026-09-02 · [skills/metadiscourse-audit/SKILL.md:268](skills/metadiscourse-audit/SKILL.md#L268)
+[^cc3ed1490]: supported · 2026-09-02 · [skills/metadiscourse-audit/SKILL.md:230](skills/metadiscourse-audit/SKILL.md#L230)
+[^c2b4d34e1]: supported · 2026-09-02 · [skills/ai-slop-audit/scripts/scan.py:474](skills/ai-slop-audit/scripts/scan.py#L474)
+[^c49ec7768]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:144](skills/ai-slop-audit/SKILL.md#L144)
+[^c335ba416]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:413](skills/lie-detector/scripts/ledger.py#L413)
+[^c2a3feb3c]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:1002](skills/lie-detector/scripts/ledger.py#L1002)
+[^ccf128b0d]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:1198](skills/lie-detector/scripts/ledger.py#L1198)
+[^c4f26fc9b]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:515](skills/lie-detector/scripts/ledger.py#L515)
+[^c6a44d483]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:530](skills/lie-detector/scripts/ledger.py#L530)
+[^c11aa7726]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:303](skills/lie-detector/scripts/ledger.py#L303)
+[^c987a2e46]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:44](skills/lie-detector/scripts/ledger.py#L44), [skills/lie-detector/scripts/ledger.py:1437](skills/lie-detector/scripts/ledger.py#L1437)
 [^cb29d02a7]: unverifiable · 2026-09-02
-[^cc76a8cdb]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1386
-[^c4aec42eb]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:725
-[^cac37f727]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:882
-[^c9553343e]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:353
-[^ca8fe8ee5]: supported · 2026-09-02 · evals/fixtures/repo-d/docs/relay.md:10, evals/fixtures/repo-d/src/relay.py:4
-[^cbd28355f]: supported · 2026-09-02 · install.sh:36, install.sh:38-39
-[^cd8bfb1d7]: supported · 2026-09-02 · install.sh:47, install.sh:38
+[^cc76a8cdb]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:1437](skills/lie-detector/scripts/ledger.py#L1437)
+[^c4aec42eb]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:726](skills/lie-detector/scripts/ledger.py#L726)
+[^cac37f727]: supported · 2026-09-02 · [skills/metadiscourse-audit/scripts/scan.py:882](skills/metadiscourse-audit/scripts/scan.py#L882)
+[^c9553343e]: supported · 2026-09-02 · [skills/metadiscourse-audit/scripts/scan.py:353](skills/metadiscourse-audit/scripts/scan.py#L353)
+[^ca8fe8ee5]: supported · 2026-09-02 · [evals/fixtures/repo-d/docs/relay.md:10](evals/fixtures/repo-d/docs/relay.md#L10), [evals/fixtures/repo-d/src/relay.py:4](evals/fixtures/repo-d/src/relay.py#L4)
+[^cbd28355f]: supported · 2026-09-02 · [install.sh:36](install.sh#L36), [install.sh:38-39](install.sh#L38-L39)
+[^cd8bfb1d7]: supported · 2026-09-02 · [install.sh:47](install.sh#L47), [install.sh:38](install.sh#L38)
 [^c0b55772c]: unsupported · 2026-09-02
 [^cf1a9344c]: unsupported · 2026-09-02
 [^c29961a02]: unsupported · 2026-09-02
@@ -590,16 +590,16 @@ MIT.
 [^cde95968c]: unsupported · 2026-09-02
 [^c9e80e15a]: unsupported · 2026-09-02
 [^cb455d13b]: unverifiable · 2026-09-02
-[^c6d8b08a7]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:1-2
-[^cbcd0eddc]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:284
+[^c6d8b08a7]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:1-2](skills/ai-slop-audit/SKILL.md#L1-L2)
+[^cbcd0eddc]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:284](skills/ai-slop-audit/SKILL.md#L284)
 [^cbc7e2aff]: unsupported · 2026-09-02
-[^c31255dad]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:19-27
-[^cffe46a3e]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:95
-[^c7976eb21]: supported · 2026-09-02 · skills/ai-slop-audit/scripts/scan.py:882
-[^c14f6b361]: supported · 2026-09-02 · skills/metadiscourse-audit/scripts/scan.py:923
-[^cdeece67d]: supported · 2026-09-02 · skills/ai-slop-audit/scripts/scan.py:940-942
-[^cf993e82a]: supported · 2026-09-02 · skills/ai-slop-audit/scripts/scan.py:942
-[^c64e9c1cc]: supported · 2026-09-02 · skills/lie-detector/scripts/ledger.py:1204
-[^c0dad975b]: supported · 2026-09-02 · skills/lie-detector/scripts/scan.py:463, skills/ai-slop-audit/SKILL.md:219
-[^c21d9dec7]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:65
-[^c33caa1b1]: supported · 2026-09-02 · skills/ai-slop-audit/SKILL.md:2
+[^c31255dad]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:19-27](skills/lie-detector/scripts/ledger.py#L19-L27)
+[^cffe46a3e]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:95](skills/ai-slop-audit/SKILL.md#L95)
+[^c7976eb21]: supported · 2026-09-02 · [skills/ai-slop-audit/scripts/scan.py:882](skills/ai-slop-audit/scripts/scan.py#L882)
+[^c14f6b361]: supported · 2026-09-02 · [skills/metadiscourse-audit/scripts/scan.py:923](skills/metadiscourse-audit/scripts/scan.py#L923)
+[^cdeece67d]: supported · 2026-09-02 · [skills/ai-slop-audit/scripts/scan.py:940-942](skills/ai-slop-audit/scripts/scan.py#L940-L942)
+[^cf993e82a]: supported · 2026-09-02 · [skills/ai-slop-audit/scripts/scan.py:942](skills/ai-slop-audit/scripts/scan.py#L942)
+[^c64e9c1cc]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:1255](skills/lie-detector/scripts/ledger.py#L1255)
+[^c0dad975b]: supported · 2026-09-02 · [skills/lie-detector/scripts/scan.py:463](skills/lie-detector/scripts/scan.py#L463), [skills/ai-slop-audit/SKILL.md:219](skills/ai-slop-audit/SKILL.md#L219)
+[^c21d9dec7]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:65](skills/ai-slop-audit/SKILL.md#L65)
+[^c33caa1b1]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:2](skills/ai-slop-audit/SKILL.md#L2)

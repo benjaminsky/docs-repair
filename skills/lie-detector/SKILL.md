@@ -81,7 +81,7 @@ and maintains the definitions at the end of the file:
 ```markdown
 The `--batch-size` flag defaults to 500 events per flush.[^c4e233156]
 
-[^c4e233156]: supported · 2026-09-01 · src/relay.py:3
+[^c4e233156]: supported · 2026-09-01 · [src/relay.py:3](src/relay.py#L3)
 ```
 
 **Anchor when you can.** A derived id is computed from the identifiers a

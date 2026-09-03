@@ -75,7 +75,7 @@ like one; apply the same judgement to files it can't recognise by name.
 One kind of metadiscourse is content, and the definition has to bend around
 it: text recording **how a claim was verified**. A claim anchor in a
 sentence, its footnote (`[^c4e23315]: supported · 2026-09-01 ·
-src/relay.py:3`), an evidence citation, a "last checked" stamp against a
+[src/relay.py:3](src/relay.py#L3)`), an evidence citation, a "last checked" stamp against a
 specific claim — the subject of all of these is the document, which is what
 this audit removes, and every one of them is load-bearing anyway.
 

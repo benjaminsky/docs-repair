@@ -544,6 +544,56 @@ class TestSidecarsAndAnchors(unittest.TestCase):
             body = fh.read()
         self.assertEqual(body.count(ledger.ANCHOR_HEADER), 1)
 
+    def test_an_example_anchor_in_a_code_fence_is_left_alone(self):
+        # A document showing the scheme is prose about the scheme; stripping
+        # the example edits the document rather than its bookkeeping.
+        root = tree()
+        path = os.path.join(root, "docs", "relay.md")
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write("\n```markdown\nA sentence.[^cdeadbeef]\n\n"
+                     "[^cdeadbeef]: supported · 2026-09-01 · src/relay.py:3\n"
+                     "```\n")
+        self.run_cli(root, "init", os.path.join(root, "docs"), "--anchor")
+        with open(path, encoding="utf-8") as fh:
+            body = fh.read()
+        self.assertIn("A sentence.[^cdeadbeef]", body)
+        self.assertIn("[^cdeadbeef]: supported · 2026-09-01 · "
+                      "src/relay.py:3", body)
+
+    def test_a_footnote_links_the_evidence_it_cites(self):
+        # A citation a reader cannot follow is an assertion again.
+        claim = {"id": "abcdef01", "verdict": "supported",
+                 "verified_at": "2026-09-02T00:00:00Z",
+                 "evidence": [{"file": "src/relay.py", "lines": "3"}]}
+        self.assertIn("[src/relay.py:3](src/relay.py#L3)",
+                      ledger._definition(claim, "README.md"))
+
+    def test_a_link_is_relative_to_the_document_not_the_root(self):
+        claim = {"id": "abcdef01", "verdict": "supported",
+                 "verified_at": "2026-09-02T00:00:00Z",
+                 "evidence": [{"file": "src/relay.py", "lines": "22-31"}]}
+        self.assertIn("[src/relay.py:22-31](../src/relay.py#L22-L31)",
+                      ledger._definition(claim, "docs/relay.md"))
+
+    def test_an_unverified_claim_links_nothing(self):
+        self.assertEqual(ledger._definition({"id": "abcdef01"}, "README.md"),
+                         "not yet verified")
+
+    def test_the_written_footnotes_carry_links(self):
+        root = tree()
+        self.run_cli(root, "init", os.path.join(root, "docs"), "--anchor")
+        led = ledger.load_ledger(os.path.join(root, "docs", "relay.claims.toml"))
+        cid = led["claim"][0]["id"]
+        claims = [dict(c, file="docs/relay.md") for c in led["claim"]]
+        claims[0].update(verdict="supported", verified_at="2026-09-02T00:00:00Z",
+                         evidence=[{"file": "src/relay.py", "lines": "3"}])
+        ledger.sync_anchors("docs/relay.md", claims, root)
+        with open(os.path.join(root, "docs", "relay.md"),
+                  encoding="utf-8") as fh:
+            body = fh.read()
+        self.assertIn("[^c%s]: supported · 2026-09-02 · "
+                      "[src/relay.py:3](../src/relay.py#L3)" % cid, body)
+
 
 class TestRelocate(unittest.TestCase):
     def run_cli(self, root, *args):

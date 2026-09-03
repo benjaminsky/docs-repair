@@ -29,6 +29,7 @@ import datetime
 import hashlib
 import json
 import os
+import posixpath
 import re
 import subprocess
 import sys
@@ -785,13 +786,37 @@ def marker_for(cid, footnotes):
     return "[^c%s]" % cid if footnotes else "<!--c%s-->" % cid
 
 
-def _definition(claim):
+def _evidence_link(ev, doc_path):
+    """`file:lines` as a link followable from the document that cites it.
+
+    Evidence paths are recorded from the repository root, but the footnote is
+    read from wherever the document sits, so the href is rebased on the
+    document's own directory. The `#L` fragment is the line address GitHub
+    and most editors honour, which is the whole point of citing a line.
+    """
+    where = ev["file"].replace(os.sep, "/")
+    lines = str(ev.get("lines", "")).strip()
+    label = "%s:%s" % (where, lines) if lines else where
+    base = posixpath.dirname(doc_path.replace(os.sep, "/"))
+    href = posixpath.relpath(where, base) if base else where
+    if "-" in lines:
+        a, b = lines.split("-", 1)
+        href += "#L%s-L%s" % (a.strip(), b.strip())
+    elif lines:
+        href += "#L%s" % lines
+    return "[%s](%s)" % (label, href)
+
+
+def _definition(claim, doc_path=None):
     """The footnote a reader sees: what settled this sentence, and when."""
     verdict = claim.get("verdict", "unverified")
     if verdict == "unverified":
         return "not yet verified"
-    where = ", ".join("%s:%s" % (e["file"], e["lines"])
-                      for e in claim.get("evidence", [])[:2])
+    evidence = claim.get("evidence", [])[:2]
+    if doc_path:
+        where = ", ".join(_evidence_link(e, doc_path) for e in evidence)
+    else:
+        where = ", ".join("%s:%s" % (e["file"], e["lines"]) for e in evidence)
     when = (claim.get("verified_at") or "")[:10]
     parts = [verdict]
     if when:
@@ -799,6 +824,28 @@ def _definition(claim):
     if where:
         parts.append(where)
     return " · ".join(parts)
+
+
+def fenced(lines):
+    """Indices inside a fenced code block, fence lines included.
+
+    Markers never go there and, more to the point, never come out of there:
+    a fenced block is where a document *shows* an anchor as an example, and
+    stripping that is editing the prose rather than the bookkeeping.
+    """
+    out = set()
+    open_fence = None
+    for n, line in enumerate(lines):
+        stripped = line.strip()
+        if open_fence is None:
+            if stripped.startswith("```") or stripped.startswith("~~~"):
+                open_fence = stripped[:3]
+                out.add(n)
+            continue
+        out.add(n)
+        if stripped.startswith(open_fence):
+            open_fence = None
+    return out
 
 
 def sync_anchors(doc_path, claims, root=".", footnotes=None):
@@ -832,7 +879,9 @@ def sync_anchors(doc_path, claims, root=".", footnotes=None):
     # form (a file added to CONTEXT_DOCS, say), and leaving both would give a
     # claim two names. Only real markers go — one quoted inside a code span
     # is prose explaining the scheme, and deleting it edits the document.
-    body = [strip_anchors(line).rstrip() for line in body]
+    in_fence = fenced(body)
+    body = [line if n in in_fence else strip_anchors(line).rstrip()
+            for n, line in enumerate(body)]
 
     added = 0
     joined = "\n".join(body)
@@ -859,6 +908,8 @@ def sync_anchors(doc_path, claims, root=".", footnotes=None):
                     continue
                 upto = window[:m.end()]
                 line_off = upto.count("\n")
+                if j + line_off in in_fence:
+                    continue
                 col = len(upto) - (upto.rfind("\n") + 1)
                 body[j + line_off] = (body[j + line_off][:col] + marker
                                       + body[j + line_off][col:])
@@ -887,7 +938,7 @@ def sync_anchors(doc_path, claims, root=".", footnotes=None):
         defs = [ANCHOR_HEADER, ""]
         for claim in sorted(claims, key=lambda c: int(c["line"])):
             defs.append("[^%s]: %s" % (anchor_id(claim["id"]),
-                                       _definition(claim)))
+                                       _definition(claim, doc_path)))
         out = body + [""] + defs + [""]
     else:
         # No block at all — not even the header, which would be one more line
