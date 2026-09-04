@@ -205,6 +205,22 @@ the vocabulary with a plain word underneath:
 + Relay caches hot partitions; p99 read latency is 3 ms.
 ```
 
+And the manner: prose whose *shape* was chosen for effect, where the effect
+is all it delivers — the rule of three with one measured item, fragment
+cadence, "Here's the thing:", a rhetorical question its own next sentence
+answers, the analogy nobody needed.
+
+```diff
+- Here's the thing: Relay is fast, reliable, and effortless to operate.
++ Relay delivers a batch in 3 ms at p99. One operator runs six clusters.
+```
+
+No pattern separates a cadence from a person, so this one arrives only from
+reading — and it carries the audit's strongest guard, because it is the class
+most likely to damage writing that was fine.[^cd2d901a4] A chosen voice is a convention
+and stays; a human author's style is not a finding; and no document is ever
+levelled wholesale, because the verdicts are per sentence.[^c5d982931]
+
 Emoji-decorated headings, empty scaffolded sections, walls of `**Term**:
 description` bullets where a table belongs — and **echoes**: the same
 sentence regenerated into three files, because sessions don't read sibling
@@ -552,10 +568,10 @@ MIT.
 [^ce6220349]: unverifiable · 2026-09-02
 [^ce63331b2]: supported · 2026-09-02 · [skills/metadiscourse-audit/scripts/scan.py:903](skills/metadiscourse-audit/scripts/scan.py#L903)
 [^c186f5991]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:38](skills/ai-slop-audit/SKILL.md#L38)
-[^cf9a26693]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:359](skills/ai-slop-audit/SKILL.md#L359)
+[^cf9a26693]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:480](skills/ai-slop-audit/SKILL.md#L480)
 [^ca527b649]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:1028](skills/lie-detector/scripts/ledger.py#L1028)
 [^cf12d8ddc]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:144](skills/ai-slop-audit/SKILL.md#L144)
-[^c30dba78c]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:359](skills/ai-slop-audit/SKILL.md#L359)
+[^c30dba78c]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:480](skills/ai-slop-audit/SKILL.md#L480)
 [^c7c88fab6]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:65](skills/ai-slop-audit/SKILL.md#L65)
 [^cee7360e0]: supported · 2026-09-02 · [skills/metadiscourse-audit/SKILL.md:47](skills/metadiscourse-audit/SKILL.md#L47)
 [^cf34631cf]: supported · 2026-09-02 · [skills/metadiscourse-audit/SKILL.md:103](skills/metadiscourse-audit/SKILL.md#L103)
@@ -565,6 +581,8 @@ MIT.
 [^c2b89925f]: supported · 2026-09-02 · [skills/metadiscourse-audit/SKILL.md:268](skills/metadiscourse-audit/SKILL.md#L268)
 [^cc3ed1490]: supported · 2026-09-02 · [skills/metadiscourse-audit/SKILL.md:230](skills/metadiscourse-audit/SKILL.md#L230)
 [^c2b4d34e1]: supported · 2026-09-02 · [skills/ai-slop-audit/scripts/scan.py:474](skills/ai-slop-audit/scripts/scan.py#L474)
+[^cd2d901a4]: supported · 2026-09-03 · [skills/ai-slop-audit/SKILL.md:249](skills/ai-slop-audit/SKILL.md#L249), [skills/ai-slop-audit/SKILL.md:331](skills/ai-slop-audit/SKILL.md#L331)
+[^c5d982931]: supported · 2026-09-03 · [skills/ai-slop-audit/SKILL.md:334](skills/ai-slop-audit/SKILL.md#L334), [skills/ai-slop-audit/SKILL.md:338](skills/ai-slop-audit/SKILL.md#L338)
 [^c49ec7768]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:144](skills/ai-slop-audit/SKILL.md#L144)
 [^c335ba416]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:413](skills/lie-detector/scripts/ledger.py#L413)
 [^c2a3feb3c]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:1002](skills/lie-detector/scripts/ledger.py#L1002)
@@ -591,7 +609,7 @@ MIT.
 [^c9e80e15a]: unsupported · 2026-09-02
 [^cb455d13b]: unverifiable · 2026-09-02
 [^c6d8b08a7]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:1-2](skills/ai-slop-audit/SKILL.md#L1-L2)
-[^cbcd0eddc]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:284](skills/ai-slop-audit/SKILL.md#L284)
+[^cbcd0eddc]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:405](skills/ai-slop-audit/SKILL.md#L405)
 [^cbc7e2aff]: unsupported · 2026-09-02
 [^c31255dad]: supported · 2026-09-02 · [skills/lie-detector/scripts/ledger.py:19-27](skills/lie-detector/scripts/ledger.py#L19-L27)
 [^cffe46a3e]: supported · 2026-09-02 · [skills/ai-slop-audit/SKILL.md:95](skills/ai-slop-audit/SKILL.md#L95)

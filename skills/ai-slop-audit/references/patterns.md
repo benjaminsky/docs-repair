@@ -3,8 +3,9 @@
 Classes 0a-0d are generation residue: the process leaking into the artifact,
 each with an objective test. Classes 1-6 are the register: what generated
 prose sounds and looks like when nobody pushes back. Echoes are the
-corpus-level pattern with no per-file test at all, and redundancy with code
-has no scanner test at all — it needs the implementation open.
+corpus-level pattern with no per-file test at all; mannered prose and
+redundancy with code have no scanner test at all — the first needs a reader,
+the second needs the implementation open.
 
 Load this file when a finding is ambiguous or you want the rewrite patterns;
 `SKILL.md`'s summaries are enough for clear cases.
@@ -145,6 +146,41 @@ so each one regenerates the shared explanation — near-verbatim, because
 they share a register. **Rewrite:** one home (the file that owns the
 topic), links everywhere else.
 
+## Mannered prose — no scanner class
+
+Classes 1-4 are words. This is shape: a sentence built for effect, where the
+effect is all it delivers. No pattern separates a cadence from a person, so
+this arrives only from reading — and it is usually the largest category on a
+generated corpus.
+
+| Manner | Example | Rewrite |
+| --- | --- | --- |
+| Rule of three | "fast, reliable, and effortless" | the one item you can measure, with its number |
+| Fragment cadence (a *run* of them) | "Batched writes. Zero downtime. No config." | one sentence with a verb |
+| The reveal | "Here's the thing:", "The kicker?", "Enter Redis:" | delete the drumroll, keep the fact |
+| Question-then-answer | "Why does this matter? Because…" | the answer, as a sentence |
+| One-sentence paragraph | a lone line for drama | rejoin it to its paragraph |
+| Aphoristic closer | "Simple, but powerful." | delete; it summarises a feeling |
+| Unneeded analogy | "think of it as a post office" | the mechanism, when it is not actually unfamiliar |
+| Personification | "the scheduler is happy to retry" | name the subject and the condition |
+| False dichotomy | "most tools force you to choose between…" | delete the setup; keep the claim it was staging |
+
+**Test:** delete the construction and ask what fact is lost. Nothing lost →
+Cut. A fact in there → state it plainly; you cannot keep the outside of a
+construction whose outside was the point, so this class is never a Fold.
+
+**The guard.** This is the class most likely to damage prose that was fine.
+A chosen voice is a convention (step 1 protects it). One mannered sentence in
+an otherwise clean file, from a human author, is that person writing — and a
+lone verbless sentence is not a cadence; the cadence is the run. Quoted copy
+keeps its manner, because the manner is what is being reported. And never
+level a whole document: per-sentence verdicts only, or the audit becomes a
+rewrite nobody asked for.
+
+**Boundary:** contrastive framing about the document itself belongs to
+`metadiscourse-audit`; symmetric filler is class 4 here. One line, one
+finding.
+
 ## Redundancy with code — no scanner class
 
 No pattern catches this one: whether a sentence restates the code is
@@ -216,18 +252,30 @@ spending a glance per candidate.
    the adjective is summary, not inflation — Keep, or Fold the two into one
    sentence.
 
-6. **Documentation for readers without the source.** A published API
+6. **A cadence somebody chose.** A landing page, a tutorial, a release
+   note, a project with a declared personality: mannered prose is the
+   register those genres are written in. Convention beats manner, the same
+   way it beats class 5.
+
+7. **Somebody else's words, quoted.** A competitor's marketing line in a
+   research write-up, a transcribed UI string, an error message, a review
+   pulled in as evidence. The manner is the subject of the sentence rather
+   than its voice, and flattening it falsifies the quotation. Applies to
+   every register class, and to manner most of all — quoted copy is *made*
+   of rhetorical questions and reveals.
+
+8. **Documentation for readers without the source.** A published API
    reference, an SDK's parameter table, a CLI's flag list: restating the
    code is what these are for. Step 5 applies to prose shadowing code its
    own readers can open.
 
-7. **Verification provenance.** A claim anchor (`[^c4e23315]`), its footnote
+9. **Verification provenance.** A claim anchor (`[^c4e23315]`), its footnote
    definition, an evidence citation. Its subject is whether a sentence is
    true, which is content; `metadiscourse-audit` protects it explicitly and
    so does this audit. The scanner skips anchors and their definitions.
 
-8. **Human-written flourish.** People write "not only… but also" too, and
-   people wrote "delve" for centuries before models did. A class 2-4 hit in
-   a file that is otherwise clean, with git history showing a human author,
-   is probably just their style — the audit removes slop, it does not
-   enforce plainness on a writer who chose otherwise.
+10. **Human-written flourish.** People write "not only… but also" too, and
+    people wrote "delve" for centuries before models did. A class 2-4 hit in
+    a file that is otherwise clean, with git history showing a human author,
+    is probably just their style — the audit removes slop, it does not
+    enforce plainness on a writer who chose otherwise.

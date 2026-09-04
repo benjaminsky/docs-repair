@@ -1,6 +1,6 @@
 ---
 name: ai-slop-audit
-description: Clean up docs that were generated or heavily edited by an AI assistant — a README, a docs/ folder, a wiki that ballooned after coding-agent sessions, the comments in source files — by stripping generation residue and the machine register. Targets chat turns committed as documentation ("I've updated the script", "Hope this helps!", "Let me know if you have any questions"), completion reports pasted where a description belongs ("The following changes were made", "All 47 tests pass"), unfilled template scaffolding and empty sections, links to files that don't exist, prose that restates what the code already does instead of why it does it, plans left behind after their work merged, emoji-decorated headings, importance inflation ("comprehensive", "robust", "seamless", "production-ready"), the lexical tells ("delve", "leverage", "utilize", "streamline"), essay scaffolding ("In this guide, we'll", "In conclusion"), walls of bold-term bullets, and the same paragraph regenerated into three files. Returns a file:line inventory with cut/fold/verify/keep verdicts and a concrete rewrite for each, and can apply the safe subset. Use it whenever docs are called AI-generated, slop, machine-written or "written by the agent", whenever someone says the docs sound like ChatGPT or read like marketing, whenever a doc folder doubled after agent sessions and someone wants to know what's real, and whenever they want the findings list before any edits. Not for rewriting a freestanding draft pasted into chat, not for revision debris in human-written docs — "previously X, now Y", dated status stamps, buried caveats are metadiscourse-audit's territory — and not for AI-generated code, changelog generation, staleness detection, translation or proofreading.
+description: Clean up docs that were generated or heavily edited by an AI assistant — a README, a docs/ folder, a wiki that ballooned after coding-agent sessions, the comments in source files — by stripping generation residue and the machine register. Targets chat turns committed as documentation ("I've updated the script", "Hope this helps!", "Let me know if you have any questions"), completion reports pasted where a description belongs ("The following changes were made", "All 47 tests pass"), unfilled template scaffolding and empty sections, links to files that don't exist, prose that restates what the code already does instead of why it does it, plans left behind after their work merged, emoji-decorated headings, importance inflation ("comprehensive", "robust", "seamless", "production-ready"), the lexical tells ("delve", "leverage", "utilize", "streamline"), essay scaffolding ("In this guide, we'll", "In conclusion"), mannered prose that performs rather than informs (the rule of three, fragment cadence, "Here's the thing:", rhetorical questions answered by the next sentence, the analogy nobody needed), walls of bold-term bullets, and the same paragraph regenerated into three files. Returns a file:line inventory with cut/fold/verify/keep verdicts and a concrete rewrite for each, and can apply the safe subset. Use it whenever docs are called AI-generated, slop, machine-written or "written by the agent", whenever someone says the docs sound like ChatGPT, read like marketing or read like a blog post, whenever a reference doc is too writerly for the job, whenever a doc folder doubled after agent sessions and someone wants to know what's real, and whenever they want the findings list before any edits. Not for rewriting a freestanding draft pasted into chat, not for revision debris in human-written docs — "previously X, now Y", dated status stamps, buried caveats are metadiscourse-audit's territory — and not for AI-generated code, changelog generation, staleness detection, translation or proofreading.
 ---
 
 # AI slop audit
@@ -243,6 +243,123 @@ that paragraph moved into the standing docs first. List the plans in the
 report with the commit or code that implements each, and let the author
 confirm the ones that are spent.
 
+## Mannered prose
+
+Not a step — it needs nothing but reading, so it happens during triage — and
+not a scanner class, because no pattern separates a cadence from a person.
+It gets a section because it is the largest category the scanner cannot see.
+On a corpus generated in one pass it is usually the bulk of what is wrong; on
+docs a person has edited since, expect a handful of findings against the
+scanner's dozens — the guard below is what keeps the pass safe there.
+
+Classes 1 to 4 are about *words*: an unearned adjective, a lexical tell, an
+essay opener, a symmetric construction. Mannered prose is about **shape** —
+sentences built for effect where the effect is the only thing delivered. A
+model has read a great many blog posts, and writes reference documentation
+in that register unless something stops it. The cost is a beat per sentence:
+the reader strips the performance to reach the fact.
+
+### The catalogue
+
+**The rule of three.** Three items where one is measured and two are there
+for the rhythm.
+
+```diff
+- Relay is fast, reliable, and effortless to operate.
++ Relay delivers a batch in 3 ms at p99. One operator runs six clusters.
+```
+
+**Fragment cadence.** A *run* of verbless sentences for emphasis — sales copy
+in a runbook. One of them is not a cadence: "The scenario builder." opening a
+README is a label, and a document that does it once is a person writing.
+
+```diff
+- Batched writes. Zero downtime. No config.
++ Writes are batched, and a restart does not drop the queue.
+```
+
+**The reveal.** "Here's the thing:", "The kicker?", "But here's where it
+gets interesting", "Enter Redis:". A drumroll before an ordinary fact.
+
+```diff
+- Here's the thing: the scheduler never sees the payload.
++ The scheduler never sees the payload.
+```
+
+**The rhetorical question the next sentence answers.** A heading in
+disguise, and a worse one, because it hides where the answer starts.
+
+```diff
+- Why does this matter? Because a stale lease can be renewed twice.
++ A stale lease can be renewed twice.
+```
+
+**The one-sentence paragraph.** Whitespace as emphasis. Fine once in an
+argument; in a reference doc it means the writer wanted a drum, not that the
+sentence stands alone.
+
+**The aphoristic closer.** "Simple, but powerful." "That's it." "And that
+changes everything." A sentence that summarises the feeling of the section
+and none of its content.
+
+**The analogy nobody needed.** "Think of it as a post office for events."
+Reach for an analogy when the mechanism is genuinely unfamiliar. A queue is
+not.
+
+**Personification.** "The scheduler is happy to retry", "Postgres doesn't
+care about your indexes". Cute once, and it hides the actual subject —
+*what* retries, under which condition.
+
+**The false-dichotomy setup.** "Most tools force you to choose between speed
+and safety." Nobody said that; it exists so the next sentence can resolve
+it.
+
+### The test
+
+**Delete the construction and ask what fact is lost.** If nothing is lost,
+Cut. If a fact is in there, it survives the plain version — so state it
+plainly rather than folding the manner around it. Mannered prose is not a
+wrapper you can keep the outside of.
+
+Second test, for the ones that feel borderline: **read it as someone in a
+hurry who already knows the domain.** Mannered constructions are exactly
+what makes such a reader skim, and skimming past a reference doc is how a
+detail gets missed.
+
+### The guard, which matters more than the catalogue
+
+This is the class most likely to damage writing that was fine. Four rules,
+and they are not optional:
+
+1. **A chosen voice is a convention.** Step 1 protects it. A landing page, a
+   tutorial, a release announcement, a project whose docs have a declared
+   personality — the register was picked by someone, and flattening it is
+   vandalism with a linter.
+2. **A human author's style is not a finding.** `git log --diff-filter=A`
+   shows who introduced the file. One mannered sentence in a document that
+   is otherwise clean is a person writing; a document where every third
+   sentence performs is the register this audit is for.
+3. **Quoted copy keeps its manner.** A competitor's marketing line in a
+   research write-up, a transcribed UI string, an error message quoted as
+   evidence: the manner is the sentence's subject, not its voice, and
+   flattening it falsifies the quotation. This is the guard that fires most
+   often on research and competitive-analysis docs, where the reveals and
+   rhetorical questions all belong to somebody else.
+4. **Never rewrite a document wholesale into flat prose.** This class is
+   per-sentence, with a verdict each. A pass that levels every cadence in a
+   file is a humanizer run backwards, and it is not an audit — it is a
+   rewrite nobody asked for, and it will destroy the parts a reader liked.
+
+And the standing rule: **no punctuation counting.** Em dashes, semicolons
+and colons are not manner. People who write well use all three heavily.
+
+### Not this audit's, when
+
+Contrastive framing about the document itself — "this is not a tutorial, it
+is a reference" — belongs to `metadiscourse-audit`. Symmetric filler ("not
+only X but also Y") is already class 4 here. A line flagged twice is one
+finding; report it once, under whichever audit is doing the pass.
+
 ## Step 6 — classify and decide
 
 Four verdicts:
@@ -265,6 +382,10 @@ honest sentence is the one without the claim.
 never filled ("## Troubleshooting" over nothing) means someone thought the
 section should exist. Cut it by default, but list it in the report as a
 possible gap — the author may want the content, not the removal.
+
+**Mannered prose is Cut or a plain rewrite, never a Fold.** You cannot keep
+the outside of a construction whose outside was the point — see the section
+above for the catalogue and, more importantly, the guard.
 
 **The code answers what; the doc answers why.** A line that would go wrong
 on its own the next time someone edits the implementation is Cut, per step 5
